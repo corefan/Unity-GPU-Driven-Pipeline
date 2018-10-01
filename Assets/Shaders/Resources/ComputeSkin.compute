@@ -1,0 +1,51 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+#define COMPUTESHADER
+#include "CGINC/Procedural.cginc"
+struct BoneWeight
+{
+    float weight0;
+    float weight1;
+    float weight2;
+    float weight3;
+    int boneIndex0;
+    int boneIndex1;
+    int boneIndex2;
+    int boneIndex3;
+};
+RWStructuredBuffer<Point> verticesBuffer;
+RWStructuredBuffer<BoneWeight> weightsBuffer;
+RWStructuredBuffer<Point> allVerticesBuffer;
+RWStructuredBuffer<float4x4> boneBuffers;
+uint _Count;
+uint _OffsetIndex;
+[numthreads(64,1,1)]
+void CSMain (uint id : SV_DispatchThreadID)
+{
+    if(id > _Count)
+    {
+        return;
+    }
+    BoneWeight weight = weightsBuffer[id];
+    float4x4 localToWorldMatrix0 = boneBuffers[weight.boneIndex0];
+    float4x4 localToWorldMatrix1 = boneBuffers[weight.boneIndex1];
+    float4x4 localToWorldMatrix2 = boneBuffers[weight.boneIndex2];
+    float4x4 localToWorldMatrix3 = boneBuffers[weight.boneIndex3];
+    Point p = verticesBuffer[id];
+    Point newP;
+    newP.vertex = mul(localToWorldMatrix0, float4(p.vertex, 1)).xyz * weight.weight0
+                + mul(localToWorldMatrix1, float4(p.vertex, 1)).xyz * weight.weight1
+                + mul(localToWorldMatrix2, float4(p.vertex, 1)).xyz * weight.weight2
+                + mul(localToWorldMatrix3, float4(p.vertex, 1)).xyz * weight.weight3;
+    newP.normal = mul((float3x3)localToWorldMatrix0, p.normal) * weight.weight0
+                + mul((float3x3)localToWorldMatrix1, p.normal) * weight.weight1
+                + mul((float3x3)localToWorldMatrix2, p.normal) * weight.weight2
+                + mul((float3x3)localToWorldMatrix3, p.normal) * weight.weight3;
+    float3 tangentXYZ = mul((float3x3)localToWorldMatrix0, p.tangent.xyz) * weight.weight0
+                + mul((float3x3)localToWorldMatrix1, p.tangent.xyz) * weight.weight1
+                + mul((float3x3)localToWorldMatrix2, p.tangent.xyz) * weight.weight2
+                + mul((float3x3)localToWorldMatrix3, p.tangent.xyz) * weight.weight3;
+    newP.tangent = float4(tangentXYZ, p.tangent.w);
+    newP.texcoord = p.texcoord;
+    allVerticesBuffer[_OffsetIndex + id] = newP;
+}
