@@ -78,4 +78,41 @@ public static class GraphicsUtility
         buffer.SetRenderTarget(colorBuffer, depthStencilBuffer);
         buffer.DrawMesh(mesh, Matrix4x4.identity, mat, 0, pass);
     }
+
+    public static void Blit(this Material mat, RenderTexture source, RenderBuffer destColor, RenderBuffer destDepth, int pass)
+    {
+        Graphics.SetRenderTarget(destColor, destDepth);
+        mat.SetTexture(ShaderIDs._MainTex, source);
+        mat.SetPass(pass);
+        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+    }
+
+    public static void Blit(this Material mat, RenderTexture source, RenderTexture dest, int pass)
+    {
+        Graphics.SetRenderTarget(dest);
+        mat.SetTexture(ShaderIDs._MainTex, source);
+        mat.SetPass(pass);
+        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+    }
+
+    public static void Blit(this Material mat, RenderBuffer destColor, RenderBuffer destDepth, int pass)
+    {
+        Graphics.SetRenderTarget(destColor, destDepth);
+        mat.SetPass(pass);
+        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+    }
+
+    public static void Blit(this Material mat, RenderBuffer[] destColor, RenderBuffer destDepth, int pass)
+    {
+        Graphics.SetRenderTarget(destColor, destDepth);
+        mat.SetPass(pass);
+        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+    }
+
+    public static void Blit(this Material mat, RenderTexture dest, int pass)
+    {
+        Graphics.SetRenderTarget(dest);
+        mat.SetPass(pass);
+        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+    }
 }

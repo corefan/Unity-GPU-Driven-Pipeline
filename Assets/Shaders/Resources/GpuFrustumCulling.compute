@@ -1,6 +1,7 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CullMain
 #pragma kernel Clear
+#pragma kernel CullAdv
 #define COMPUTESHADER
 #include "CGINC/Procedural.cginc"
 float4 planes[PLANECOUNT];
@@ -12,7 +13,11 @@ struct ObjectInfo
 RWStructuredBuffer<ObjectInfo> clusterBuffer;
 RWStructuredBuffer<uint> instanceCountBuffer;
 RWStructuredBuffer<uint> resultBuffer;
-
+Texture2D<float> _HizDepthTex;  SamplerState sampler_HizDepthTex;
+uint _Count;
+float3 _CameraUpVector;
+float4x4 _VP;
+float4 _CameraPos;  //XYZ:camera position W:far clip plane
 float PlaneTest(ObjectInfo info){
     float3 position = info.position;
     float3 extent = info.extent;
@@ -29,7 +34,41 @@ float PlaneTest(ObjectInfo info){
     return result;
 }
 
-uint _Count;
+static const float3 extentArray[8] = 
+{
+    float3(1,1,1),
+    float3(1,1,-1),
+    float3(1,-1,1),
+    float3(1,-1,-1),
+    float3(-1,1,1),
+    float3(-1,1,-1),
+    float3(-1,-1,1),
+    float3(-1,-1,-1)
+};
+
+float OcclusionTest(ObjectInfo info)
+{
+    float3 farPoint = info.position + length(info.extent) * _CameraUpVector;
+    float4 centerClipPos = mul(_VP, float4(info.position, 1));
+    centerClipPos /= centerClipPos.w;
+    float4 farClipPos = mul(_VP, float4(farPoint, 1));
+    farClipPos /= farClipPos.w;
+    float screenDist = distance(farClipPos.xy, centerClipPos.xy);
+    float lodLevel = clamp(log2(screenDist * 32), 0, 6);
+    [unroll]
+    for(uint i = 0; i < 8; ++i)
+    {
+        float3 worldPoint = info.position + info.extent * extentArray[i];
+        float4 clipPos = mul(_VP, float4(worldPoint, 1));
+        float2 uv = clipPos.xy / clipPos.w;
+        uv = uv * 0.5 + 0.5;
+        float depth = _HizDepthTex.SampleLevel(sampler_HizDepthTex, uv, lodLevel) * _CameraPos.w;
+        float distToCam = distance(_CameraPos.xyz, worldPoint);
+        if(depth > distToCam) return 1;
+    }
+    return 0;
+}
+
 [numthreads(64, 1, 1)]
 void CullMain (uint id : SV_DISPATCHTHREADID)
 {
@@ -45,12 +84,29 @@ void CullMain (uint id : SV_DISPATCHTHREADID)
         resultBuffer[currentIndex] = id;
     }
 }
-[numthreads(1,1,1)]
+static const uint ClearData[5] = 
+{
+CLUSTERVERTEXCOUNT,
+0,0,0,0
+};
+[numthreads(5,1,1)]
 void Clear(uint id : SV_DISPATCHTHREADID)
 {
-    instanceCountBuffer[0] = CLUSTERVERTEXCOUNT;
-    instanceCountBuffer[1] = 0;
-    instanceCountBuffer[2] = 0;
-    instanceCountBuffer[3] = 0;
-    instanceCountBuffer[4] = 0;
+    instanceCountBuffer[id] = ClearData[id];
+}
+
+[numthreads(64, 1, 1)]
+void CullAdv(uint id : SV_DISPATCHTHREADID)
+{
+    if(id > _Count)
+    {
+        return;
+    }
+    ObjectInfo currentObject = clusterBuffer[id];
+    float result =  PlaneTest(currentObject) * OcclusionTest(currentObject);
+    if(result > 0.5){
+        int currentIndex;
+        InterlockedAdd(instanceCountBuffer[1], 1, currentIndex);
+        resultBuffer[currentIndex] = id;
+    }
 }

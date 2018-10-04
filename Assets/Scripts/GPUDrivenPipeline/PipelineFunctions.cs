@@ -165,68 +165,9 @@ public unsafe static class PipelineFunctions
         // top right
         shadMap.frustumCorners[7] = targetCamera.ViewportToWorldPoint(new Vector3(1, 1, distance.y));
     }
-    /// <summary>
-    /// Set Shadowcamera Position
-    /// </summary>
-    /// <param name="shadMap"></param> Shadowmap component
-    /// <param name="settings"></param> Shadowmap Settings
-    public static void SetShadowCameraPositionCloseFit(ref ShadowMapComponent shadMap, ref ShadowmapSettings settings)
+
+    public static void SetShadowCameraPositionStaticFit(ref StaticFit fit, ref OrthoCam shadCam, int pass, Matrix4x4[] vpMatrices, out Matrix4x4 invShadowVP)
     {
-        Camera shadowCam = shadMap.shadowCam;
-        NativeArray<AspectInfo> shadowFrustumPlanes = shadMap.shadowFrustumPlanes;
-        AspectInfo info = shadowFrustumPlanes[0];
-        info.planeNormal = shadowCam.transform.right;
-        shadowFrustumPlanes[0] = info;
-        info = shadowFrustumPlanes[1];
-        info.planeNormal = shadowCam.transform.up;
-        shadowFrustumPlanes[1] = info;
-        info = shadowFrustumPlanes[2];
-        info.planeNormal = shadowCam.transform.forward;
-        shadowFrustumPlanes[2] = info;
-        for (int i = 0; i < 3; ++i)
-        {
-            info = shadowFrustumPlanes[i];
-            float least = float.MaxValue;
-            float maximum = float.MinValue;
-            Vector3 lessPoint = Vector3.zero;
-            Vector3 morePoint = Vector3.zero;
-            for (int x = 0; x < 8; ++x)
-            {
-                float dotValue = Vector3.Dot(info.planeNormal, shadMap.frustumCorners[x]);
-                if (dotValue < least)
-                {
-                    least = dotValue;
-                    lessPoint = shadMap.frustumCorners[x];
-                }
-                if (dotValue > maximum)
-                {
-                    maximum = dotValue;
-                    morePoint = shadMap.frustumCorners[x];
-                }
-            }
-            info.size = (maximum - least) / 2f;
-            info.inPlanePoint = lessPoint + info.planeNormal * info.size;
-            shadowFrustumPlanes[i] = info;
-        }
-        AspectInfo temp = shadowFrustumPlanes[2];
-        temp.size = settings.farestDistance;    //Farest Cascade Distance
-        shadowFrustumPlanes[2] = temp;
-        Transform tr = shadowCam.transform;
-        for (int i = 0; i < 3; ++i)
-        {
-            info = shadowFrustumPlanes[i];
-            float dist = Vector3.Dot(info.inPlanePoint, info.planeNormal) - Vector3.Dot(tr.position, info.planeNormal);
-            tr.position += dist * info.planeNormal;
-        }
-        shadowCam.orthographicSize = shadowFrustumPlanes[1].size;
-        shadowCam.aspect = shadowFrustumPlanes[0].size / shadowFrustumPlanes[1].size;
-        shadowCam.nearClipPlane = 0;
-        shadowCam.farClipPlane = shadowFrustumPlanes[2].size * 2;
-        tr.position -= shadowFrustumPlanes[2].size * shadowFrustumPlanes[2].planeNormal;
-    }
-    public static void SetShadowCameraPositionStaticFit(ref StaticFit fit, int pass, Matrix4x4[] vpMatrices, out Matrix4x4 invShadowVP)
-    {
-        fit.shadowCam.aspect = 1;
         float range = 0;
         Vector3 averagePos = Vector3.zero;
         foreach (var i in fit.frustumCorners)
@@ -242,11 +183,11 @@ public unsafe static class PipelineFunctions
                 range = dist;
             }
         }
-        fit.shadowCam.orthographicSize = range;
+        shadCam.size = range;
         float farClipPlane = fit.mainCamTrans.farClipPlane;
-        Vector3 targetPosition = averagePos - fit.shadowCam.transform.forward * farClipPlane * 0.5f;
-        fit.shadowCam.nearClipPlane = 0;
-        fit.shadowCam.farClipPlane = farClipPlane;
+        Vector3 targetPosition = averagePos - shadCam.forward * farClipPlane * 0.5f;
+        shadCam.nearClipPlane = 0;
+        shadCam.farClipPlane = farClipPlane;
         ref Matrix4x4 shadowVP = ref vpMatrices[pass];
         invShadowVP = shadowVP.inverse;
         Vector3 ndcPos = shadowVP.MultiplyPoint(targetPosition);
@@ -257,8 +198,10 @@ public unsafe static class PipelineFunctions
         uv = uv * 2f - Vector2.one;
         ndcPos = new Vector3(uv.x, uv.y, ndcPos.z);
         targetPosition = invShadowVP.MultiplyPoint(ndcPos);
-        fit.shadowCam.transform.position = targetPosition;
-        shadowVP = GL.GetGPUProjectionMatrix(fit.shadowCam.projectionMatrix, false) * fit.shadowCam.worldToCameraMatrix;
+        shadCam.position = targetPosition;
+        shadCam.UpdateProjectionMatrix();
+        shadCam.UpdateTRSMatrix();
+        shadowVP = GL.GetGPUProjectionMatrix(shadCam.projectionMatrix, false) * shadCam.worldToCameraMatrix;
         invShadowVP = shadowVP.inverse;
     }
     /// <summary>
@@ -266,7 +209,6 @@ public unsafe static class PipelineFunctions
     /// </summary>
     public static void UpdateShadowMapState(ref ShadowMapComponent comp, ref ShadowmapSettings settings)
     {
-        Camera shadowCam = comp.shadowCam;
         Shader.SetGlobalVector(ShaderIDs._NormalBiases, settings.normalBias);
         Shader.SetGlobalVector(ShaderIDs._ShadowDisableDistance, new Vector4(settings.firstLevelDistance, settings.secondLevelDistance, settings.thirdLevelDistance, settings.farestDistance));
         Shader.SetGlobalVector(ShaderIDs._LightFinalColor, comp.light.color * comp.light.intensity);
@@ -277,26 +219,23 @@ public unsafe static class PipelineFunctions
     /// </summary>
     public static void UpdateCascadeState(ref ShadowMapComponent comp, float bias, int pass)
     {
-        Camera shadowCam = comp.shadowCam;
-        Vector4 shadowcamDir = shadowCam.transform.forward;
+        Vector4 shadowcamDir = comp.shadCam.forward;
         shadowcamDir.w = bias;
         Graphics.SetRenderTarget(comp.shadowmapTexture, 0, CubemapFace.Unknown, depthSlice: pass);
         GL.Clear(true, true, Color.white);
         Shader.SetGlobalVector(ShaderIDs._ShadowCamDirection, shadowcamDir);
-        Matrix4x4 rtVp = GL.GetGPUProjectionMatrix(shadowCam.projectionMatrix, true) * shadowCam.worldToCameraMatrix;
+        Matrix4x4 rtVp = GL.GetGPUProjectionMatrix(comp.shadCam.projectionMatrix, true) * comp.shadCam.worldToCameraMatrix;
         comp.shadowDepthMaterial.SetMatrix(ShaderIDs._ShadowMapVP, rtVp);
-        Shader.SetGlobalVector(ShaderIDs._ShadowCamPos, shadowCam.transform.position);
+        Shader.SetGlobalVector(ShaderIDs._ShadowCamPos, comp.shadCam.position);
         comp.shadowDepthMaterial.SetPass(0);
     }
     /// <summary>
     /// Initialize shadowmask per frame buffers
     /// </summary>
-    public static void UpdateShadowMaskState(Material shadowMaskMaterial, ref ShadowMapComponent shadMap, ref Matrix4x4[] cascadeShadowMapVP, ref Vector4[] shadowCameraPos)
+    public static void UpdateShadowMaskState(Material shadowMaskMaterial, ref ShadowMapComponent shadMap, Matrix4x4[] cascadeShadowMapVP)
     {
         Shader.SetGlobalMatrixArray(ShaderIDs._ShadowMapVPs, cascadeShadowMapVP);
-        Shader.SetGlobalVectorArray(ShaderIDs._ShadowCamPoses, shadowCameraPos);
         Shader.SetGlobalTexture(ShaderIDs._DirShadowMap, shadMap.shadowmapTexture);
-
     }
     public static void Dispose(ref PipelineBaseBuffer baseBuffer)
     {
@@ -308,29 +247,41 @@ public unsafe static class PipelineFunctions
     /// <summary>
     /// Set Basement buffers
     /// </summary>
-    public static void SetBaseBuffer(ref PipelineBaseBuffer baseBuffer, ComputeShader gpuFrustumShader, Vector4[] frustumCullingPlanes)
+    public static void SetBaseBuffer(ref PipelineBaseBuffer baseBuffer, ComputeShader gpuFrustumShader, Vector4[] frustumCullingPlanes, int kernel)
     {
         var compute = gpuFrustumShader;
         compute.SetVectorArray(ShaderIDs.planes, frustumCullingPlanes);
-        compute.SetBuffer(0, ShaderIDs.clusterBuffer, baseBuffer.clusterBuffer);
-        compute.SetBuffer(0, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
+        compute.SetBuffer(kernel, ShaderIDs.clusterBuffer, baseBuffer.clusterBuffer);
+        compute.SetBuffer(kernel, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
         compute.SetBuffer(1, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
-        compute.SetBuffer(0, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
+        compute.SetBuffer(kernel, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
     }
+
+    public static void SetHizOccBuffer(ref PipelineCommandData data, RenderTexture hizDepth, ComputeShader shader, int kernel)
+    {
+        shader.SetTexture(kernel, ShaderIDs._HizDepthTex, hizDepth);
+        shader.SetVector(ShaderIDs._CameraUpVector, data.cam.transform.up);
+        Vector4 camPos = data.cam.transform.position;
+        camPos.w = data.cam.farClipPlane;
+        shader.SetVector(ShaderIDs._CameraPos, camPos);
+        shader.SetMatrix(ShaderIDs._VP, data.vp);
+    }
+
     public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer)
     {
         Shader.SetGlobalBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
         Shader.SetGlobalBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
     }
+
     public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer, CommandBuffer geometry)
     {
         geometry.SetGlobalBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
         geometry.SetGlobalBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
     }
-    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader)
+    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, int kernel)
     {
         computeShader.Dispatch(1, 1, 1, 1);
-        ComputeShaderUtility.Dispatch(computeShader, 0, baseBuffer.clusterCount, 64);
+        ComputeShaderUtility.Dispatch(computeShader, kernel, baseBuffer.clusterCount, 64);
     }
     public static void RenderProceduralCommand(ref PipelineBaseBuffer buffer, Material material)
     {
@@ -342,18 +293,23 @@ public unsafe static class PipelineFunctions
         vp = GL.GetGPUProjectionMatrix(currentCam.projectionMatrix, false) * currentCam.worldToCameraMatrix;
         invVP = vp.inverse;
     }
-    public static void DrawShadow(Camera currentCam, ref PipelineConstEntity constEntity, ref PipelineBaseBuffer baseBuffer, ref ShadowmapSettings settings, ref ShadowMapComponent shadMap)
+    public static void DrawShadow(Camera currentCam,
+        ref PipelineConstEntity constEntity,
+        ref PipelineBaseBuffer baseBuffer,
+        ref ShadowmapSettings settings,
+        ref ShadowMapComponent shadMap,
+        Matrix4x4[] cascadeShadowMapVP,
+        Vector4[] shadowFrustumPlanes)
     {
         var arr = constEntity.arrayCollection;
         var gpuFrustumShader = constEntity.gpuFrustumShader;
         StaticFit staticFit;
-        staticFit.resolution = settings.resolution / 2;
+        staticFit.resolution = settings.resolution;
         staticFit.mainCamTrans = currentCam;
-        staticFit.shadowCam = shadMap.shadowCam;
         staticFit.frustumCorners = shadMap.frustumCorners;
         UpdateShadowMapState(ref shadMap, ref settings);
         float* clipDistances = (float*)UnsafeUtility.Malloc(CASCADECLIPSIZE, 16, Allocator.Temp);
-        clipDistances[0] = staticFit.shadowCam.nearClipPlane;
+        clipDistances[0] = shadMap.shadCam.nearClipPlane;
         clipDistances[1] = settings.firstLevelDistance;
         clipDistances[2] = settings.secondLevelDistance;
         clipDistances[3] = settings.thirdLevelDistance;
@@ -364,11 +320,10 @@ public unsafe static class PipelineFunctions
             GetfrustumCorners(farClipDistance, ref shadMap, currentCam);
             // PipelineFunctions.SetShadowCameraPositionCloseFit(ref shadMap, ref settings);
             Matrix4x4 invpVPMatrix;
-            SetShadowCameraPositionStaticFit(ref staticFit, pass, arr.cascadeShadowMapVP, out invpVPMatrix);
-            arr.shadowCameraPos[pass] = shadMap.shadowCam.transform.position;
-            GetCullingPlanes(ref invpVPMatrix, arr.shadowFrustumPlanes);
-            SetBaseBuffer(ref baseBuffer, constEntity.gpuFrustumShader, constEntity.arrayCollection.shadowFrustumPlanes);
-            RunCullDispatching(ref baseBuffer, gpuFrustumShader);
+            SetShadowCameraPositionStaticFit(ref staticFit, ref shadMap.shadCam, pass, cascadeShadowMapVP, out invpVPMatrix);
+            GetCullingPlanes(ref invpVPMatrix, shadowFrustumPlanes);
+            SetBaseBuffer(ref baseBuffer, constEntity.gpuFrustumShader, shadowFrustumPlanes, 0);
+            RunCullDispatching(ref baseBuffer, gpuFrustumShader, 0);
             float* biasList = (float*)UnsafeUtility.AddressOf(ref settings.bias);
             UpdateCascadeState(ref shadMap, biasList[pass] / currentCam.farClipPlane, pass);
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, baseBuffer.instanceCountBuffer);
@@ -384,6 +339,7 @@ public unsafe static class PipelineFunctions
         tar.gbufferTextures[3] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 24, RenderTextureFormat.ARGBHalf, collectRT);
         for (int i = 0; i < tar.gbufferTextures.Length; ++i)
         {
+            tar.gbufferTextures[i].filterMode = FilterMode.Point;
             tar.geometryColorBuffer[i] = tar.gbufferTextures[i].colorBuffer;
             Shader.SetGlobalTexture(tar.gbufferIndex[i], tar.gbufferTextures[i]);
         }
@@ -392,10 +348,6 @@ public unsafe static class PipelineFunctions
         tar.motionVectorTexture = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.RGFloat, collectRT);
         tar.colorBuffer = tar.renderTarget.colorBuffer;
         tar.depthBuffer = tar.renderTarget.depthBuffer;
-        foreach(var i in collectRT)
-        {
-            i.filterMode = FilterMode.Point;
-        }
     }
 
     public static RenderTexture GetTemporary(RenderTextureDescriptor descriptor, List<RenderTexture> collectList)
@@ -419,20 +371,7 @@ public unsafe static class PipelineFunctions
             RenderTexture.ReleaseTemporary(i);
         }
     }
-    public static int PrepareDirShadow(Camera currentCam, ref PipelineConstEntity constEntity, ref PipelineBaseBuffer baseBuffer, SunLight sun, ref ShadowMapComponent shadMap)
-    {
-        int pass;
-        if (sun.enableShadow)
-        {
-            DrawShadow(currentCam, ref constEntity, ref baseBuffer, ref sun.settings, ref shadMap);
-            pass = 0;
-        }
-        else
-        {
-            pass = 1;
-        }
-        return pass;
-    }
+
     public static void DrawDirLight(CommandBuffer afterLightCommand, Material shadMaskMat, int pass)
     {
         afterLightCommand.SetGlobalVector(ShaderIDs._LightPos, -SunLight.current.transform.forward);

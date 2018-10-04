@@ -2,51 +2,88 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-public abstract class PipelineEvent : MonoBehaviour
+namespace MPipeline
 {
-    public static Func<PipelineEvent, PipelineEvent, int> compareFunc = (x, y) =>
+    public abstract class PipelineEvent : MonoBehaviour
     {
-        if (x.layer > y.layer) return -1;
-        if (x.layer < y.layer) return 1;
-        return 0;
-    };
-    [HideInInspector]
-    public bool m_enabledInPipeline = false;
-    public float layer = 2000;
-    public bool enabledInPipeline
-    {
-        get
+        public static Func<PipelineEvent, PipelineEvent, int> compareFunc = (x, y) =>
         {
-            return m_enabledInPipeline;
-        }
-        set
+            if (x.layer > y.layer) return -1;
+            if (x.layer < y.layer) return 1;
+            return 0;
+        };
+        [HideInInspector]
+        public bool m_enabledInPipeline = false;
+        [HideInInspector]
+        public bool m_enableBeforePipeline = false;
+        public float layer = 2000;
+        public bool enabledInPipeline
         {
-            if (m_enabledInPipeline == value) return;
-            m_enabledInPipeline = value;
-            SetEnable(value);
+            get
+            {
+                return m_enabledInPipeline;
+            }
+            set
+            {
+                if (m_enabledInPipeline == value) return;
+                m_enabledInPipeline = value;
+                SetIn(value);
+            }
         }
+        public bool enableBeforePipeline
+        {
+            get
+            {
+                return m_enableBeforePipeline;
+            }
+            set
+            {
+                if (m_enableBeforePipeline == value) return;
+                m_enableBeforePipeline = value;
+                SetBefore(value);
+            }
+        }
+        private void SetBefore(bool value)
+        {
+            if (value)
+            {
+                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+            }
+            else
+            {
+                RenderPipeline.preRenderEvents.Remove(this);
+            }
+        }
+        private void SetIn(bool value)
+        {
+            if (value)
+            {
+                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
+            }
+            else
+            {
+                RenderPipeline.drawEvents.Remove(this);
+            }
+        }
+        protected virtual void Awake()
+        {
+            if (m_enabledInPipeline)
+            {
+                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
+            }
+            if (m_enableBeforePipeline)
+            {
+                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+            }
+        }
+        protected virtual void OnDestroy()
+        {
+            if (m_enabledInPipeline)
+                RenderPipeline.drawEvents.Remove(this);
+            if (m_enableBeforePipeline)
+                RenderPipeline.preRenderEvents.Remove(this);
+        }
+        public abstract void FrameUpdate(ref PipelineCommandData data);
+        public abstract void PreRenderFrame(Camera cam);
     }
-    private void SetEnable(bool value)
-    {
-        if (value)
-        {
-            RenderPipeline.drawEvents.InsertTo(this, compareFunc);
-        }
-        else
-        {
-            RenderPipeline.drawEvents.Remove(this);
-        }
-    }
-    protected virtual void Awake()
-    {
-        if (m_enabledInPipeline)
-        {
-            RenderPipeline.drawEvents.InsertTo(this, compareFunc);
-        }
-    }
-    protected virtual void OnDestroy()
-    {
-        RenderPipeline.drawEvents.Remove(this);
-    }
-    public abstract void FrameUpdate(ref PipelineCommandData data);
 }

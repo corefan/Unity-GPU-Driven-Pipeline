@@ -2,8 +2,7 @@
 {
 	SubShader
 	{
-		Cull Off ZWrite Off ZTest Greater
-		Blend one one
+
 CGINCLUDE
 #pragma target 5.0
 #include "UnityCG.cginc"
@@ -104,19 +103,17 @@ static const float2 DirPoissonDisks[64] =
 				o.uv = v.uv;
 				return o;
 			}
+			float4 _SoftParam;
 			float4x4 _InvVP;
-			float3 _ShadowCamPoses[4];
-			float4 _ShadowCamDirection;
 			float4x4 _ShadowMapVPs[4];
 			float4 _ShadowDisableDistance;
-			float4 _SoftParam;
 			UNITY_DECLARE_TEX2DARRAY(_DirShadowMap);
-			Texture2D _CameraGBufferTexture0; SamplerState sampler_CameraGBufferTexture0;
-			Texture2D _CameraGBufferTexture1; SamplerState sampler_CameraGBufferTexture1;
-			Texture2D _CameraGBufferTexture2; SamplerState sampler_CameraGBufferTexture2;
+			Texture2D<float4> _CameraGBufferTexture0; SamplerState sampler_CameraGBufferTexture0;
+			Texture2D<float4> _CameraGBufferTexture1; SamplerState sampler_CameraGBufferTexture1;
+			Texture2D<float4> _CameraGBufferTexture2; SamplerState sampler_CameraGBufferTexture2;
 			float3 _LightFinalColor;
 			#define RANDOM(seed) cos(sin(seed * float2(54.135764, 77.468761) + float2(631.543147, 57.4687)) * float2(657.387478, 86.1653) + float2(65.15686, 15.3574563))
-			float GetShadow(inout float4 worldPos, float depth, float2 screenUV)
+			float GetShadow(inout float4 worldPos, float2 screenUV)
 			{
 				worldPos /= worldPos.w;
 				float eyeDistance = length(worldPos.xyz - _WorldSpaceCameraPos);
@@ -148,11 +145,33 @@ static const float2 DirPoissonDisks[64] =
 				return atten;
 			}
 
+			float GetHardShadow(float3 worldPos)
+			{
+				float eyeDistance = length(worldPos.xyz - _WorldSpaceCameraPos);
+				float4 eyeRange = eyeDistance < _ShadowDisableDistance;
+				eyeRange.yzw -= eyeRange.xyz;
+				float zAxisUV = dot(eyeRange, float4(0, 1, 2, 3));
+				float4x4 vpMat = _ShadowMapVPs[zAxisUV];
+				float4 shadowPos = mul(vpMat, float4(worldPos, 1));
+				float2 shadowUV = shadowPos.xy / shadowPos.w;
+				shadowUV = shadowUV * 0.5 + 0.5;
+				#if UNITY_REVERSED_Z
+				float dist = 1 - shadowPos.z;
+				#else
+				float dist = shadowPos.z;
+				#endif
+				float atten = dist < UNITY_SAMPLE_TEX2DARRAY(_DirShadowMap, float3(shadowUV, zAxisUV)).r;
+				float fadeDistance = saturate( (_ShadowDisableDistance.w - eyeDistance) / (_ShadowDisableDistance.w * 0.05));
+				atten = lerp(1, atten, fadeDistance);
+				return atten;
+			}
+
 ENDCG
 
 		Pass
 		{
-
+		Cull Off ZWrite Off ZTest Greater
+		Blend one one
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -165,7 +184,7 @@ ENDCG
     			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
 				float depth = gbuffer2.w;
 				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
-				float4 atten = GetShadow(wpos, depth, i.uv);
+				float atten = GetShadow(wpos, i.uv);
 				UnityStandardData data = UnityStandardDataFromGbuffer(gbuffer0, gbuffer1, gbuffer2);
 				float3 eyeVec = normalize(wpos.xyz - _WorldSpaceCameraPos);
 				half oneMinusReflectivity = 1 - SpecularStrength(data.specularColor.rgb);
@@ -183,7 +202,8 @@ ENDCG
 
 		Pass
 		{
-
+		Cull Off ZWrite Off ZTest Greater
+		Blend one one
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag
@@ -206,6 +226,34 @@ ENDCG
 				light.dir = _LightPos.xyz;
 				light.color = _LightFinalColor;
 				return UNITY_BRDF_PBS (data.diffuseColor, data.specularColor, oneMinusReflectivity, data.smoothness, data.normalWorld, -eyeVec, light, ind);
+			}
+			ENDCG
+		}
+
+		Pass
+		{
+		Cull Off ZWrite Off ZTest Always
+			CGPROGRAM
+			#pragma vertex vert
+			#pragma fragment frag
+
+			float4 frag (v2f i) : SV_Target
+			{
+    			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
+				float depth = gbuffer2.w;
+				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
+				wpos /= wpos.w;
+				const float step = 1.0 / 512.0;
+				float3 viewDir = wpos.xyz - _WorldSpaceCameraPos;
+				float len = length(viewDir);
+				float value = 0;
+				for(float i = 0; i < 1; i += step)
+				{
+					float3 samplePos = lerp(_WorldSpaceCameraPos, wpos.xyz, i);
+					value += GetHardShadow(samplePos);
+				}
+				value *= step * 0.1 * len;
+				return value;
 			}
 			ENDCG
 		}

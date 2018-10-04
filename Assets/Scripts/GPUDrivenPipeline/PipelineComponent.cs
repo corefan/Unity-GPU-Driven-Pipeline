@@ -39,7 +39,7 @@ public struct ShadowmapSettings
 
 public struct ShadowMapComponent
 {
-    public Camera shadowCam;
+    public OrthoCam shadCam;
     public Material shadowDepthMaterial;
     public RenderTexture shadowmapTexture;
     public NativeArray<Vector3> frustumCorners;
@@ -69,10 +69,66 @@ public struct PerObjectData
     public const int SIZE = 16;
 }
 
+public struct PerspCam
+{
+    public Vector3 right;
+    public Vector3 up;
+    public Vector3 forward;
+    public Vector3 position;
+    public float fov;
+    public float nearClipPlane;
+    public float farClipPlane;
+    public float aspect;
+    public Matrix4x4 localToWorldMatrix;
+    public Matrix4x4 worldToCameraMatrix;
+    public Matrix4x4 projectionMatrix;
+    public void UpdateTRSMatrix()
+    {
+        localToWorldMatrix.SetColumn(0, right);
+        localToWorldMatrix.SetColumn(1, up);
+        localToWorldMatrix.SetColumn(2, forward);
+        localToWorldMatrix.SetColumn(3, position);
+        localToWorldMatrix.m33 = 1;
+        worldToCameraMatrix = localToWorldMatrix.inverse;
+        worldToCameraMatrix.SetRow(2, -worldToCameraMatrix.GetRow(2));
+    }
+    public void UpdateProjectionMatrix()
+    {
+        projectionMatrix = Matrix4x4.Perspective(fov, aspect, nearClipPlane, farClipPlane);
+    }
+}
+
+public struct OrthoCam
+{
+    public Matrix4x4 worldToCameraMatrix;
+    public Matrix4x4 localToWorldMatrix;
+    public Vector3 right;
+    public Vector3 up;
+    public Vector3 forward;
+    public Vector3 position;
+    public float size;
+    public float nearClipPlane;
+    public float farClipPlane;
+    public Matrix4x4 projectionMatrix;
+    public void UpdateTRSMatrix()
+    {
+        localToWorldMatrix.SetColumn(0, right);
+        localToWorldMatrix.SetColumn(1, up);
+        localToWorldMatrix.SetColumn(2, forward);
+        localToWorldMatrix.SetColumn(3, position);
+        localToWorldMatrix.m33 = 1;
+        worldToCameraMatrix = localToWorldMatrix.inverse;
+        worldToCameraMatrix.SetRow(2, -worldToCameraMatrix.GetRow(2));
+    }
+    public void UpdateProjectionMatrix()
+    {
+        projectionMatrix = Matrix4x4.Ortho(-size, size, -size, size, nearClipPlane, farClipPlane);
+    }
+}
+
 public struct StaticFit
 {
     public int resolution;
-    public Camera shadowCam;
     public Camera mainCamTrans;
     public NativeArray<Vector3> frustumCorners;
 }
@@ -88,9 +144,6 @@ public struct RenderArray
     public Vector4[] farFrustumCorner;
     public Vector4[] nearFrustumCorner;
     public Vector4[] frustumPlanes;
-    public Vector4[] shadowFrustumPlanes;
-    public Matrix4x4[] cascadeShadowMapVP;
-    public Vector4[] shadowCameraPos;
     public RenderArray(bool init)
     {
         if (init)
@@ -98,22 +151,12 @@ public struct RenderArray
             frustumPlanes = new Vector4[6];
             farFrustumCorner = new Vector4[6];
             nearFrustumCorner = new Vector4[6];
-            shadowFrustumPlanes = new Vector4[6];
-            cascadeShadowMapVP = new Matrix4x4[4];
-            shadowCameraPos = new Vector4[4];
-            for (int i = 0; i < cascadeShadowMapVP.Length; ++i)
-            {
-                cascadeShadowMapVP[i] = Matrix4x4.identity;
-            }
         }
         else
         {
             farFrustumCorner = null;
             nearFrustumCorner = null;
             frustumPlanes = null;
-            shadowFrustumPlanes = null;
-            cascadeShadowMapVP = null;
-            shadowCameraPos = null;
         }
     }
 }

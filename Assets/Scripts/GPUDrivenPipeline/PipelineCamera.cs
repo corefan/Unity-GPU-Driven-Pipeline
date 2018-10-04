@@ -1,26 +1,38 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-[RequireComponent(typeof(Camera))]
-public class PipelineCamera : MonoBehaviour
+namespace MPipeline
 {
-    private Camera cam;
-    void Awake()
+    [RequireComponent(typeof(Camera))]
+    public class PipelineCamera : MonoBehaviour
     {
-        cam = GetComponent<Camera>();
-        cam.renderingPath = RenderingPath.Forward;
-        cam.cullingMask = 0;
-        cam.clearFlags = CameraClearFlags.Nothing;
-    }
-    private void OnRenderImage(RenderTexture source, RenderTexture destination)
-    {
-        if (RenderPipeline.singleton)
+        private Camera cam;
+        void Awake()
         {
-            RenderPipeline.singleton.Render(cam, destination);
+            cam = GetComponent<Camera>();
+            cam.renderingPath = RenderingPath.Forward;
+            cam.cullingMask = 0;
+            cam.clearFlags = CameraClearFlags.Nothing;
         }
-        else
+
+        private void OnPreCull()
         {
-            Graphics.Blit(source, destination);
+            if (RenderPipeline.singleton)
+            {
+                RenderPipeline.singleton.BeforePipeline(cam);
+            }
+        }
+
+        private void OnRenderImage(RenderTexture source, RenderTexture destination)
+        {
+            if (RenderPipeline.singleton)
+            {
+                RenderPipeline.singleton.Render(cam, destination);
+            }
+            else
+            {
+                Graphics.Blit(source, destination);
+            }
         }
     }
 }

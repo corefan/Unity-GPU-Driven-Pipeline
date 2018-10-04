@@ -2,15 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-[CustomEditor(typeof(PipelineEvent), true)]
-public class PipelineEventEditor : Editor
+namespace MPipeline
 {
-    
-    public override void OnInspectorGUI()
+    [CustomEditor(typeof(PipelineEvent), true)]
+    public class PipelineEventEditor : Editor
     {
-        PipelineEvent target = serializedObject.targetObject as PipelineEvent;
-        EditorGUILayout.LabelField("Pipeline Settings:");
-        target.enabledInPipeline = EditorGUILayout.Toggle("Enable In Pipeline", target.enabledInPipeline);
-        base.OnInspectorGUI();
+
+        public override void OnInspectorGUI()
+        {
+            PipelineEvent target = serializedObject.targetObject as PipelineEvent;
+            EditorGUILayout.LabelField("Pipeline Settings:");
+            target.enabledInPipeline = EditorGUILayout.Toggle("Enable In Pipeline", target.enabledInPipeline);
+            target.enableBeforePipeline = EditorGUILayout.Toggle("Enable Before Pipeline", target.enableBeforePipeline);
+            base.OnInspectorGUI();
+        }
     }
 }

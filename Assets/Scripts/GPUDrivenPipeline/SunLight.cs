@@ -4,7 +4,6 @@ using Unity.Collections;
 
 using UnityEngine;
 [RequireComponent(typeof(Light))]
-[RequireComponent(typeof(Camera))]
 public class SunLight : MonoBehaviour
 {
     public static SunLight current = null;
@@ -30,18 +29,15 @@ public class SunLight : MonoBehaviour
         shadMap.shadowmapTexture.volumeDepth = 4;
         shadMap.shadowmapTexture.filterMode = FilterMode.Point;
         shadMap.frustumCorners = new NativeArray<Vector3>(8, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-        shadMap.shadowCam = GetComponent<Camera>();
-        shadMap.shadowCam.enabled = false;
-        shadMap.shadowCam.orthographic = true;
-        shadMap.shadowCam.renderingPath = RenderingPath.Forward;
-        shadMap.shadowCam.useOcclusionCulling = true;
-        shadMap.shadowCam.allowMSAA = false;
-        shadMap.shadowCam.allowHDR = false;
         shadMap.shadowDepthMaterial = new Material(Shader.Find("Hidden/ShadowDepth"));
         shadMap.shadowFrustumPlanes = new NativeArray<AspectInfo>(3, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-        Vector3 eulerAngle = transform.eulerAngles;
-        eulerAngle.z = Random.Range(5f, 355f);
-        transform.eulerAngles = eulerAngle;
+    }
+
+    private void Update()
+    {
+        shadMap.shadCam.forward = transform.forward;
+        shadMap.shadCam.up = transform.up;
+        shadMap.shadCam.right = transform.right;
     }
 
     private void OnDestroy()
