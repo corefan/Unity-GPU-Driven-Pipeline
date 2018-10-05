@@ -17,7 +17,6 @@
                 float3 worldPos : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
-float _CameraFarClipPlane;
             StructuredBuffer<float4x4> resultBuffer;
             StructuredBuffer<float4> verticesBuffer;
             v2f vert (uint vertexID : SV_VERTEXID, uint instanceID : SV_INSTANCEID)
@@ -33,7 +32,7 @@ float _CameraFarClipPlane;
 
             float frag (v2f i) : SV_Target
             {
-                return distance(_WorldSpaceCameraPos, i.worldPos) / _CameraFarClipPlane;
+                return Linear01Depth(i.vertex.z);
             }
             ENDCG
         }

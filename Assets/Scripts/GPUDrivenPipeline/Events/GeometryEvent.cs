@@ -36,8 +36,7 @@ namespace MPipeline
             {
                 PipelineFunctions.SetHizOccBuffer(ref data, hizDepth.depthMipTexture, constEntity.gpuFrustumShader, kernel);
             }
-            PipelineFunctions.RunCullDispatching(ref baseBuffer, constEntity.gpuFrustumShader, kernel
-                );
+            PipelineFunctions.RunCullDispatching(ref baseBuffer, constEntity.gpuFrustumShader, kernel);
             PipelineFunctions.RenderProceduralCommand(ref baseBuffer, proceduralMaterial);
         }
         public override void PreRenderFrame(Camera cam)
@@ -48,7 +47,6 @@ namespace MPipeline
     [System.Serializable]
     public unsafe struct HizDepth
     {
-
         private ComputeShader cullingShader;
         private ComputeBuffer allCubeBuffer;
         private ComputeBuffer instanceCountBuffer;
@@ -57,12 +55,12 @@ namespace MPipeline
         private RenderTexture backupMip;
         private Material getLodMat;
         private Material mat;
-        //[System.NonSerialized]
+        [System.NonSerialized]
         public RenderTexture depthMipTexture;
         public bool enableHiz;
         public Transform[] occluderTransforms;
         public Mesh cube;
-        
+
         public void InitHiZ()
         {
             if (occluderTransforms.Length == 0)
@@ -83,6 +81,7 @@ namespace MPipeline
             depthMipTexture.useMipMap = true;
             depthMipTexture.autoGenerateMips = false;
             depthMipTexture.filterMode = FilterMode.Point;
+            depthMipTexture.wrapMode = TextureWrapMode.Clamp;
             backupMip.filterMode = FilterMode.Point;
             getLodMat = new Material(Shader.Find("Hidden/GetLOD"));
             mat = new Material(Shader.Find("Unlit/IndirectDepth"));
@@ -118,7 +117,6 @@ namespace MPipeline
         {
             mat.SetBuffer(ShaderIDs.verticesBuffer, verticesBuffer);
             mat.SetBuffer(ShaderIDs.resultBuffer, resultBuffer);
-            mat.SetFloat(ShaderIDs._CameraFarClipPlane, data.cam.farClipPlane);
             Graphics.SetRenderTarget(depthMipTexture, 0);
             GL.Clear(true, true, Color.white);
             mat.SetPass(0);
@@ -126,7 +124,7 @@ namespace MPipeline
         }
         private void GetMipMap()
         {
-            for (int i = 1; i < 7; ++i)
+            for (int i = 1; i < 8; ++i)
             {
                 getLodMat.SetTexture(ShaderIDs._MainTex, depthMipTexture);
                 getLodMat.SetInt(ShaderIDs._PreviousLevel, i - 1);
@@ -162,11 +160,11 @@ namespace MPipeline
         /// <returns></returns> Compute Shader Kernel
         public int DrawHizDepth(ref PipelineCommandData data)
         {
-            if (!enableHiz) return 0;
+            if (!enableHiz) return PipelineBaseBuffer.ComputeShaderKernels.ClusterCullKernel;
             ExecuteComputeShader(data.constEntity.arrayCollection.frustumPlanes);
             DrawOccluder(ref data);
             GetMipMap();
-            return 2;
+            return PipelineBaseBuffer.ComputeShaderKernels.ClusterCullOccKernel;
         }
     }
 }

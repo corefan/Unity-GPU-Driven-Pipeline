@@ -13,7 +13,6 @@ namespace MPipeline
     public unsafe class ClusterGenerator : MonoBehaviour
     {
         private Mesh testMesh;
-        public Material mat;
         public bool clear = true;
         public RenderPipeline pipelineComponent;
         public void GetAllTriangles(int[] indices, out Triangle* triangles, out int length)
@@ -181,6 +180,9 @@ namespace MPipeline
         }
         private void OnDisable()
         {
+            //TODO
+            //Per Object Offset
+            uint meshOffset = 0;
             testMesh = GetComponent<MeshFilter>().sharedMesh;
             Vector3[] vert = testMesh.vertices;
             Vector3[] nor = testMesh.normals;
@@ -190,8 +192,8 @@ namespace MPipeline
             UnsafeList<Cluster> v = GetAllCluster(tris, vert);
             var clusterDistance = GetClusterDistances(v, vert);
             List<Cluster[]> clusterGroups = GetClusters(clusterDistance, v);
-            uint infoByteSize = (uint)(clusterGroups.Count * ObjectInfo.SIZE);
-            ObjectInfo* infos = (ObjectInfo*)UnsafeUtility.Malloc(infoByteSize, 16, Allocator.Temp);
+            uint infoByteSize = (uint)(clusterGroups.Count * ClusterMeshData.SIZE);
+            ClusterMeshData* infos = (ClusterMeshData*)UnsafeUtility.Malloc(infoByteSize, 16, Allocator.Temp);
             uint pointsByteSize = (uint)(clusterGroups.Count * 64 * Point.SIZE);
             Point* points = (Point*)UnsafeUtility.Malloc(pointsByteSize, 16, Allocator.Temp);
             for (int i = 0, pointsCount = 0; i < clusterGroups.Count; ++i)
@@ -202,7 +204,7 @@ namespace MPipeline
                     group[a] = clusterGroups[i][a];
                 }
                 int* decodedGroup = (int*)group;
-                ObjectInfo info;
+                ClusterMeshData info;
                 info.position = Vector3.zero;
                 info.extent = Vector3.zero;
                 Vector3* allPositions = (Vector3*)UnsafeUtility.Malloc(sizeof(Vector3) * 64, 16, Allocator.Temp);
@@ -237,6 +239,7 @@ namespace MPipeline
                     dir = dir.Abs();
                     info.extent = dir.Max(info.extent);
                 }
+                info.index = meshOffset + (uint)i;
                 infos[i] = info;
                 byte[] pointsBytes = new byte[pointsByteSize];
                 byte[] infosBytes = new byte[infoByteSize];

@@ -108,7 +108,7 @@ public unsafe static class PipelineFunctions
         byte[] pointBytes = pointText.bytes;
         byte[] infoBytes = infoText.bytes;
         Point* points = null;
-        ObjectInfo* infos = null;
+        ClusterMeshData* infos = null;
         int pointLength = 0;
         int infoLength = 0;
         fixed (void* ptr = &pointBytes[0])
@@ -118,16 +118,16 @@ public unsafe static class PipelineFunctions
         }
         fixed (void* ptr = &infoBytes[0])
         {
-            infos = (ObjectInfo*)ptr;
-            infoLength = infoBytes.Length / ObjectInfo.SIZE;
+            infos = (ClusterMeshData*)ptr;
+            infoLength = infoBytes.Length / ClusterMeshData.SIZE;
         }
-        NativeArray<ObjectInfo> allInfos = new NativeArray<ObjectInfo>(infoLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+        NativeArray<ClusterMeshData> allInfos = new NativeArray<ClusterMeshData>(infoLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
         NativeArray<Point> allPoints = new NativeArray<Point>(pointLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
         void* destination = allPoints.GetUnsafePtr();
         UnsafeUtility.MemCpy(destination, points, pointBytes.Length);
         destination = allInfos.GetUnsafePtr();
         UnsafeUtility.MemCpy(destination, infos, infoBytes.Length);
-        baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ObjectInfo.SIZE);
+        baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ClusterMeshData.SIZE);
         baseBuffer.clusterBuffer.SetData(allInfos);
         baseBuffer.resultBuffer = new ComputeBuffer(allInfos.Length, PipelineBaseBuffer.UINTSIZE);
         baseBuffer.instanceCountBuffer = new ComputeBuffer(1, PipelineBaseBuffer.INDIRECTSIZE, ComputeBufferType.IndirectArguments);
@@ -261,9 +261,6 @@ public unsafe static class PipelineFunctions
     {
         shader.SetTexture(kernel, ShaderIDs._HizDepthTex, hizDepth);
         shader.SetVector(ShaderIDs._CameraUpVector, data.cam.transform.up);
-        Vector4 camPos = data.cam.transform.position;
-        camPos.w = data.cam.farClipPlane;
-        shader.SetVector(ShaderIDs._CameraPos, camPos);
         shader.SetMatrix(ShaderIDs._VP, data.vp);
     }
 
