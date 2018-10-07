@@ -29,7 +29,7 @@ RWStructuredBuffer<float4x4> resultBuffer;
 [numthreads(64,1,1)]
 void CSMain (uint id : SV_DispatchThreadID)
 {
-	if (id > _Count) return;
+	if (id >= _Count) return;
     float4x4 info = allCubeBuffer[id];
     if(PlaneTest(info) > 0.5)
     {

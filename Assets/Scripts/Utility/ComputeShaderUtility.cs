@@ -12,7 +12,7 @@ public static class ComputeShaderUtility
         {
             threadPerGroup++;
         }
-        shader.SetInt(ShaderIDs._Count, count - 1);
+        shader.SetInt(ShaderIDs._Count, count);
         shader.Dispatch(kernal, threadPerGroup, 1, 1);
     }
 

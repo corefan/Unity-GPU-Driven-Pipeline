@@ -13,7 +13,6 @@ struct ClusterMeshData
 {
     float3 extent;
     float3 position;
-    uint index;
 };
 RWStructuredBuffer<ClusterMeshData> clusterBuffer;
 RWStructuredBuffer<uint> instanceCountBuffer;
@@ -77,13 +76,13 @@ float OcclusionTest(ClusterMeshData info)
 [numthreads(64, 1, 1)]
 void ClusterCull (uint id : SV_DISPATCHTHREADID)
 {
-    if(id > _Count) return; 
+    if(id >= _Count) return; 
     ClusterMeshData currentObject = clusterBuffer[id];
     float result =  PlaneTest(currentObject);
     if(result > 0.5){
         uint currentIndex;
         InterlockedAdd(instanceCountBuffer[1], 1, currentIndex);
-        resultBuffer[currentIndex] = currentObject.index;
+        resultBuffer[currentIndex] = id;
     }
 }
 
@@ -102,13 +101,13 @@ void ClearCluster(uint id : SV_DISPATCHTHREADID)
 [numthreads(64, 1, 1)]
 void ClusterCullOcc(uint id : SV_DISPATCHTHREADID)
 {
-    if(id > _Count) return; 
+    if(id >= _Count) return; 
     ClusterMeshData currentObject = clusterBuffer[id];
     float result =  PlaneTest(currentObject) * OcclusionTest(currentObject);
     if(result > 0.5){
         uint currentIndex;
         InterlockedAdd(instanceCountBuffer[1], 1, currentIndex);
-        resultBuffer[currentIndex] = currentObject.index;
+        resultBuffer[currentIndex] = id;
     }
 }
 
@@ -144,7 +143,7 @@ float ObjectFrustum(float3x4 info, float3 extent)
 [numthreads(64, 1, 1)]
 void ObjectCull(uint id : SV_DISPATCHTHREADID)
 {
-    if(id > _Count) return;
+    if(id >= _Count) return;
     ObjectMeshData data = allSceneObjectBuffer[id];
     if(ObjectFrustum(data.localToWorldMatrix, data.extent))
     {

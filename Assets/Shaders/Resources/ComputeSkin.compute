@@ -22,7 +22,7 @@ uint _OffsetIndex;
 [numthreads(64,1,1)]
 void CSMain (uint id : SV_DispatchThreadID)
 {
-    if(id > _Count)
+    if(id >= _Count)
     {
         return;
     }

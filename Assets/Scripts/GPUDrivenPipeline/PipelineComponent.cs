@@ -150,8 +150,7 @@ public struct ClusterMeshData
 {
     public Vector3 extent;
     public Vector3 position;
-    public uint index;
-    public const int SIZE = 28;
+    public const int SIZE = 24;
 }
 public struct PerObjectData
 {
