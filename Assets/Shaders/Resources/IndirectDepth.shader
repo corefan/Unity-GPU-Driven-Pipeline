@@ -8,6 +8,8 @@
         Pass
         {
             CGPROGRAM
+// Upgrade NOTE: excluded shader from OpenGL ES 2.0 because it uses non-square matrices
+#pragma exclude_renderers gles
             #pragma vertex vert
             #pragma fragment frag
             #pragma target 5.0
@@ -17,16 +19,15 @@
                 float3 worldPos : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
-            StructuredBuffer<float4x4> resultBuffer;
+            StructuredBuffer<float3x4> resultBuffer;
             StructuredBuffer<float4> verticesBuffer;
             v2f vert (uint vertexID : SV_VERTEXID, uint instanceID : SV_INSTANCEID)
             {
                 v2f o;
                 float3 vertex = verticesBuffer[vertexID];
-                float4x4 info = resultBuffer[instanceID];
-                float4 worldPos = mul(info, float4(vertex, 1));
-                o.worldPos = worldPos.xyz;
-                o.vertex = mul(UNITY_MATRIX_VP, worldPos);
+                float3x4 info = resultBuffer[instanceID];
+                o.worldPos =  mul(info, float4(vertex, 1));
+                o.vertex = mul(UNITY_MATRIX_VP, float4(o.worldPos, 1));
                 return o;
             }
 

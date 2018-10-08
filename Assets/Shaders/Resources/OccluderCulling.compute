@@ -4,7 +4,7 @@
 #define PLANECOUNT 6
 float4 planes[PLANECOUNT];
 uint _Count;
-float PlaneTest(float4x4 info)
+float PlaneTest(float3x4 info)
 {
     float3 right = float3(info._m00, info._m10, info._m20);
     float3 up = float3(info._m01, info._m11, info._m21);
@@ -23,14 +23,14 @@ float PlaneTest(float4x4 info)
     return result;
 }
 
-RWStructuredBuffer<float4x4> allCubeBuffer;
+RWStructuredBuffer<float3x4> allCubeBuffer;
 RWStructuredBuffer<uint> instanceCountBuffer;
-RWStructuredBuffer<float4x4> resultBuffer;
+RWStructuredBuffer<float3x4> resultBuffer;
 [numthreads(64,1,1)]
 void CSMain (uint id : SV_DispatchThreadID)
 {
 	if (id >= _Count) return;
-    float4x4 info = allCubeBuffer[id];
+    float3x4 info = allCubeBuffer[id];
     if(PlaneTest(info) > 0.5)
     {
         uint index;

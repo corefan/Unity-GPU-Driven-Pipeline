@@ -3,12 +3,89 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using System.Collections.Concurrent;
-using System.Linq;
+using System.IO;
 using Unity.Jobs;
 using System;
 namespace MPipeline
 {
+    public unsafe static class ClusterSortFunction
+    {
+        public struct Element
+        {
+            public float sign;
+            public Fragment policy;
+            public int leftValue;
+            public int rightValue;
+        }
+
+        public static void ClusterSort(NativeArray<Fragment> fragments, NativeArray<float> distances)
+        {
+            if (fragments.Length == 0) return;
+            NativeArray<Element> elements = new NativeArray<Element>(fragments.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            Element* elementsPtr = (Element*)elements.GetUnsafePtr();
+            Fragment* fragmentsPtr = (Fragment*)fragments.GetUnsafePtr();
+            float* distancePtr = (float*)distances.GetUnsafePtr();
+            Element newElement;
+            newElement.sign = 0;
+            newElement.policy = new Fragment();
+            newElement.leftValue = -1;
+            newElement.rightValue = -1;
+            for (int i = 0; i < elements.Length; ++i)
+            {
+                newElement.sign = distancePtr[i];
+                newElement.policy = fragmentsPtr[i];
+                elementsPtr[i] = newElement;
+            }
+            for (int i = 1; i < fragments.Length; ++i)
+            {
+                int currentIndex = 0;
+                STARTFIND:
+                Element* currentIndexValue = elementsPtr + currentIndex;
+                if ((elementsPtr + i)->sign < currentIndexValue->sign)
+                {
+                    if (currentIndexValue->leftValue < 0)
+                    {
+                        currentIndexValue->leftValue = i;
+                    }
+                    else
+                    {
+                        currentIndex = currentIndexValue->leftValue;
+                        goto STARTFIND;
+                    }
+                }
+                else
+                {
+                    if (currentIndexValue->rightValue < 0)
+                    {
+                        currentIndexValue->rightValue = i;
+                    }
+                    else
+                    {
+                        currentIndex = currentIndexValue->rightValue;
+                        goto STARTFIND;
+                    }
+                }
+            }
+            int start = 0;
+            Iterate(0, ref start, elements, fragments);
+            elements.Dispose();
+        }
+        private static void Iterate(int i, ref int targetLength, NativeArray<Element> elements, NativeArray<Fragment> results)
+        {
+            int leftValue = elements[i].leftValue;
+            if (leftValue >= 0)
+            {
+                Iterate(leftValue, ref targetLength, elements, results);
+            }
+            results[targetLength] = ((Element*)elements.GetUnsafePtr() + (ulong)i)->policy;
+            targetLength++;
+            int rightValue = elements[i].rightValue;
+            if (rightValue >= 0)
+            {
+                Iterate(rightValue, ref targetLength, elements, results);
+            }
+        }
+    }
 
     [ExecuteInEditMode]
     public unsafe class ClusterGenerator : MonoBehaviour
@@ -20,6 +97,25 @@ namespace MPipeline
         private void OnDisable()
         {
             testMesh = GetComponent<MeshFilter>().sharedMesh;
+            Vector3[] verticesMesh = testMesh.vertices;
+            Vector3[] normalsMesh = testMesh.normals;
+            Vector2[] uv = testMesh.uv;
+            Vector4[] tangents = testMesh.tangents;
+            NativeArray<Point> pointsFromMesh = new NativeArray<Point>(verticesMesh.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            Matrix4x4 localToWorld = transform.localToWorldMatrix;
+            for(int i = 0; i < pointsFromMesh.Length; ++i)
+            {
+                Vector3 vertex = localToWorld.MultiplyPoint3x4(verticesMesh[i]);
+                Vector4 tangent = localToWorld.MultiplyVector(tangents[i]);
+                Vector3 normal = localToWorld.MultiplyVector(normalsMesh[i]);
+                tangent.w = tangents[i].w;
+                Point p;
+                p.tangent = tangent;
+                p.normal = normal;
+                p.vertex = vertex;
+                p.texcoord = uv[i];
+                pointsFromMesh[i] = p;
+            }
             List<Vector4Int> value = ClusterFunctions.AddTrianglesToDictionary(testMesh.triangles);
             Bounds bd = testMesh.bounds;
             GetFragmentJob gt = new GetFragmentJob(bd.center, bd.extents, testMesh.vertices, value);
@@ -28,12 +124,13 @@ namespace MPipeline
             const int VoxelCount = ClusterFunctions.VoxelCount;
             Fragment first = new Fragment();
             Vector3Int inputPoint = new Vector3Int();
-            for (int i = 0; i < VoxelCount; ++i) {
+            for (int i = 0; i < VoxelCount; ++i)
+            {
                 for (int j = 0; j < VoxelCount; ++j)
                     for (int k = 0; k < VoxelCount; ++k)
                     {
                         var lst = voxel[i, j, k];
-                        if(lst.Count > 0)
+                        if (lst.Count > 0)
                         {
                             first = lst[0];
                             inputPoint = new Vector3Int(i, j, k);
@@ -43,12 +140,60 @@ namespace MPipeline
             }
             BREAK:
             NativeArray<Fragment> resultCluster;
+            List<NativeArray<Fragment>> allFragments = new List<NativeArray<Fragment>>();
+            
             LOOP:
-            bool stillLooping = ClusterFunctions.GetFragFromVoxel(voxel, inputPoint, out resultCluster, out first);
-            resultCluster.Dispose();
+            bool stillLooping = ClusterFunctions.GetFragFromVoxel(voxel, first.position, inputPoint, out resultCluster);
+            List<Vector3> vertices = new List<Vector3>(16 * 6);
+            List<Vector3> normals = new List<Vector3>(16 * 6);
             if (stillLooping)
+            {
+
+                first = resultCluster[resultCluster.Length - 1];
+                allFragments.Add(resultCluster);
                 goto LOOP;
+            }
             gt.Dispose();
+            NativeArray<ClusterMeshData> meshData = new NativeArray<ClusterMeshData>(allFragments.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            NativeArray<Point>[] allpoints = new NativeArray<Point>[allFragments.Count];
+            int pointCount = 0;
+            for (int i = 0; i < allpoints.Length; ++i)
+            {
+                allpoints[i] = new NativeArray<Point>((allFragments[i].Length - 1) * 4, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                pointCount += allpoints[i].Length;
+            }
+            CollectJob.meshDatas = meshData;
+            CollectJob.allFragments = allFragments;
+            CollectJob.pointsArray = allpoints;
+            CollectJob.pointsFromMesh = pointsFromMesh;
+            CollectJob jb = new CollectJob();
+            jb.Schedule(allFragments.Count, 1).Complete();
+            CollectJob.allFragments = null;
+            CollectJob.pointsArray = null;
+            NativeArray<Point> pointsList = new NativeArray<Point>(pointCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            for(int i = 0, pointsCount = 0; i < allpoints.Length; ++i)
+            {
+                var current = allpoints[i];
+                for(int a = 0; a < current.Length; ++a)
+                {
+                    pointsList[pointsCount] = current[a];
+                    pointsCount++;
+                }
+                current.Dispose();
+            }
+            byte[] meshDataArray;
+            byte[] pointDataArray;
+            ClusterFunctions.GetByteDataFromArray(meshData, pointsList, out meshDataArray, out pointDataArray);
+            File.WriteAllBytes("Assets/Resources/MapInfos.txt", meshDataArray);
+            File.WriteAllBytes("Assets/Resources/MapPoints.txt", pointDataArray);
+            //Dispose Native Array
+            meshData.Dispose();
+            pointsList.Dispose();
+            pointsFromMesh.Dispose();
+            foreach(var i in allFragments)
+            {
+                i.Dispose();
+            }
         }
     }
     #region STRUCT
@@ -78,6 +223,21 @@ namespace MPipeline
     {
         public const int ClusterCount = PipelineBaseBuffer.CLUSTERCLIPCOUNT / 4;
         public const int VoxelCount = 10;
+        public static void GetByteDataFromArray(NativeArray<ClusterMeshData> meshdata, NativeArray<Point> points, out byte[] meshBytes, out byte[] pointBytes)
+        {
+            meshBytes = new byte[meshdata.Length * sizeof(ClusterMeshData)];
+            pointBytes = new byte[points.Length * sizeof(Point)];
+            void* meshDataPtr = meshdata.GetUnsafePtr();
+            void* pointsPtr = points.GetUnsafePtr();
+            fixed(void* destination = &meshBytes[0])
+            {
+                UnsafeUtility.MemCpy(destination, meshDataPtr, meshBytes.Length);
+            }
+            fixed(void* destination = &pointBytes[0])
+            {
+                UnsafeUtility.MemCpy(destination, pointsPtr, pointBytes.Length);
+            }
+        }
         private static bool CheckCluster(Dictionary<Vector2Int, int> targetDict, Vector3Int triangle, out Vector4Int cluster)
         {
             cluster = new Vector4Int();
@@ -135,9 +295,10 @@ namespace MPipeline
             result.y = left.y / right.y;
             result.z = left.z / right.z;
             result *= VoxelCount;
-            result.x = Mathf.Min(9.9f, result.x);
-            result.y = Mathf.Min(9.9f, result.y);
-            result.z = Mathf.Min(9.9f, result.z);
+            const float MinValue = VoxelCount - 0.1f;
+            result.x = Mathf.Min(MinValue, result.x);
+            result.y = Mathf.Min(MinValue, result.y);
+            result.z = Mathf.Min(MinValue, result.z);
             return new Vector3Int((int)result.x, (int)result.y, (int)result.z);
         }
 
@@ -160,58 +321,89 @@ namespace MPipeline
                 lists.Add(frag);
             }
         }
-        private static void AddVoxelToList(List<Fragment>[,,] voxelArray, List<Fragment> targetArray, bool[,,] alreadyCalculated, Vector3Int coord)
-        {
-            if (coord.x >= VoxelCount || coord.x < 0 || coord.y >= VoxelCount || coord.y < 0 || coord.z >= VoxelCount || coord.z < 0 || alreadyCalculated[coord.x, coord.y, coord.z] || targetArray.Count >= (ClusterCount + 1))
-                return;
-            alreadyCalculated[coord.x, coord.y, coord.z] = true;
-            List<Fragment> voxelValue = voxelArray[coord.x, coord.y, coord.z];
-            targetArray.AddRange(voxelValue);
-            voxelValue.Clear();
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(-1, 0, 0));
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(1, 0, 0));
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(0, -1, 0));
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(0, 1, 0));
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(0, 0, -1));
-            AddVoxelToList(voxelArray, targetArray, alreadyCalculated, coord + new Vector3Int(0, 0, 1));
-        }
 
-        public static bool GetFragFromVoxel(List<Fragment>[,,] voxelArray, Vector3Int inputPoint, out NativeArray<Fragment> resultCluster, out Fragment next)
+        private static void AddVoxelToList(List<Fragment>[,,] voxelArray, List<Fragment> targetArray, Vector3Int coord)
         {
-            bool[,,] alreadyCalculated = new bool[VoxelCount, VoxelCount, VoxelCount];
-            List<Fragment> fragments = new List<Fragment>(ClusterCount + 1);
-            AddVoxelToList(voxelArray, fragments, alreadyCalculated, inputPoint);
-            if (fragments.Count > (ClusterCount + 1))
+            const int TARGETVOLUMECOUNT = VoxelCount * VoxelCount * VoxelCount;
+            int volumeCount = 0;
+            int spreadCount = 0;
+            Vector2Int xAxisRange = new Vector2Int();
+            Vector2Int yAxisRange = new Vector2Int();
+            Vector2Int zAxisRange = new Vector2Int();
+            while (volumeCount < TARGETVOLUMECOUNT)
             {
-                for (int i = ClusterCount; i < fragments.Count; ++i)
+                xAxisRange = new Vector2Int(Mathf.Max(0, coord.x - spreadCount), Mathf.Min(VoxelCount, coord.x + spreadCount));
+                yAxisRange = new Vector2Int(Mathf.Max(0, coord.y - spreadCount), Mathf.Min(VoxelCount, coord.y + spreadCount));
+                zAxisRange = new Vector2Int(Mathf.Max(0, coord.z - spreadCount), Mathf.Min(VoxelCount, coord.z + spreadCount));
+                volumeCount = (xAxisRange.y - xAxisRange.x) * (yAxisRange.y - yAxisRange.x) * (zAxisRange.y - zAxisRange.x);
+                int listCount = 0;
+                for (int x = xAxisRange.x; x < xAxisRange.y; ++x)
                 {
-                    Fragment f = fragments[i];
-                    voxelArray[f.voxel.x, f.voxel.y, f.voxel.z].Add(f);
+                    for (int y = yAxisRange.x; y < yAxisRange.y; ++y)
+                    {
+                        for (int z = zAxisRange.x; z < zAxisRange.y; ++z)
+                        {
+                            listCount += voxelArray[x, y, z].Count;
+                        }
+                    }
+                }
+                if (listCount > ClusterCount)
+                    break;
+                spreadCount++;
+            }
+            for (int x = xAxisRange.x; x < xAxisRange.y; ++x)
+            {
+                for (int y = yAxisRange.x; y < yAxisRange.y; ++y)
+                {
+                    for (int z = zAxisRange.x; z < zAxisRange.y; ++z)
+                    {
+                        List<Fragment> lst = voxelArray[x, y, z];
+                        targetArray.AddRange(lst);
+                        lst.Clear();
+                    }
                 }
             }
+        }
+
+        public static bool GetFragFromVoxel(List<Fragment>[,,] voxelArray, Vector3 originPointPosition, Vector3Int inputPoint, out NativeArray<Fragment> resultCluster)
+        {
+            List<Fragment> fragments = new List<Fragment>(ClusterCount + 1);
+            AddVoxelToList(voxelArray, fragments, inputPoint);
+
             if (ClusterCount < fragments.Count)
             {
-                resultCluster = new NativeArray<Fragment>(ClusterCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-                for (int i = 0; i < ClusterCount; ++i)
+                resultCluster = new NativeArray<Fragment>(ClusterCount + 1, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i <= ClusterCount; ++i)
                 {
                     resultCluster[i] = fragments[i];
                 }
-                next = fragments[ClusterCount];
+                NativeArray<float> distances = new NativeArray<float>(resultCluster.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i < distances.Length; ++i)
+                {
+                    distances[i] = Vector3.SqrMagnitude(originPointPosition - resultCluster[i].position);
+                }
+                ClusterSortFunction.ClusterSort(resultCluster, distances);
+                distances.Dispose();
+                Fragment f = resultCluster[ClusterCount];
+                voxelArray[f.voxel.x, f.voxel.y, f.voxel.z].Add(f);
+                for (int i = ClusterCount + 1; i < fragments.Count; ++i)
+                {
+                    f = fragments[i];
+                    voxelArray[f.voxel.x, f.voxel.y, f.voxel.z].Add(f);
+                }
                 return true;
-            }else
+            }
+            else
             {
                 resultCluster = new NativeArray<Fragment>(fragments.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
                 for (int i = 0; i < fragments.Count; ++i)
                 {
                     resultCluster[i] = fragments[i];
                 }
-                next = new Fragment();
                 return false;
             }
         }
     }
-
-
     public unsafe struct GetFragmentJob : IJobParallelFor
     {
         public static Vector3[] vertices;
@@ -245,6 +437,60 @@ namespace MPipeline
         public void Execute(int index)
         {
             ClusterFunctions.SetPointToVoxel(fragments[index], vertices, voxelFragments, leftPoint, distance);
+        }
+    }
+    public unsafe struct CollectJob : IJobParallelFor
+    {
+        public static List<NativeArray<Fragment>> allFragments;
+        public static NativeArray<ClusterMeshData> meshDatas;
+        public static NativeArray<Point>[] pointsArray;
+        public static NativeArray<Point> pointsFromMesh;
+        public void Execute(int index)
+        {
+            NativeArray<Fragment> fragments = allFragments[index];
+            Fragment* fragPtr = (Fragment*)fragments.GetUnsafePtr();
+            ClusterMeshData data = new ClusterMeshData();
+            NativeArray<Point> allPoints = pointsArray[index];
+            for (int i = 0, pointCount = 0; i < fragments.Length - 1; ++i)
+            {
+                int* indices = (int*)&fragPtr[i].indices;
+                for (int a = 0; a < 4; ++a)
+                {
+                    Point p = pointsFromMesh[indices[a]];
+                    allPoints[pointCount] = p;
+                    pointCount++;
+                }
+            }
+            Point firstPoint = allPoints[0];
+            float top = firstPoint.vertex.y;
+            float down = firstPoint.vertex.y;
+            float left = firstPoint.vertex.x;
+            float right = firstPoint.vertex.x;
+            float back = firstPoint.vertex.z;
+            float front = firstPoint.vertex.z;
+            for (int i = 1; i < allPoints.Length; ++i)
+            {
+                Point pt = allPoints[i];
+                if (pt.vertex.y > top)
+                    top = pt.vertex.y;
+                if (pt.vertex.y < down)
+                    down = pt.vertex.y;
+                if (pt.vertex.x > right)
+                    right = pt.vertex.x;
+                if (pt.vertex.x < left)
+                    left = pt.vertex.x;
+                if (pt.vertex.z > front)
+                    front = pt.vertex.z;
+                if (pt.vertex.z < back)
+                    back = pt.vertex.z;
+            }
+            Vector3 position = new Vector3((left + right) * 0.5f
+                                         , (top + down) * 0.5f
+                                         , (front + back) * 0.5f);
+            Vector3 extents = new Vector3(right - position.x, top - position.y, front - position.z);
+            data.position = position;
+            data.extent = extents;
+            meshDatas[index] = data;
         }
     }
 }

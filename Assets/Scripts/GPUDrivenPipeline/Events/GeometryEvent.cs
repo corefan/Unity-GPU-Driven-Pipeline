@@ -69,8 +69,8 @@ namespace MPipeline
                 return;
             }
             cullingShader = Resources.Load<ComputeShader>("OccluderCulling");
-            allCubeBuffer = new ComputeBuffer(occluderTransforms.Length, sizeof(Matrix4x4));
-            resultBuffer = new ComputeBuffer(occluderTransforms.Length, sizeof(Matrix4x4));
+            allCubeBuffer = new ComputeBuffer(occluderTransforms.Length, Matrix3x4.SIZE);
+            resultBuffer = new ComputeBuffer(occluderTransforms.Length, Matrix3x4.SIZE);
             instanceCountBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
             verticesBuffer = new ComputeBuffer(36, 16);
             const int depthRes = 256;
@@ -92,11 +92,11 @@ namespace MPipeline
             {
                 vecs[i] = vertices[triangle[i]];
             }
-            NativeArray<Matrix4x4> allInfos = new NativeArray<Matrix4x4>(occluderTransforms.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            Matrix4x4* input = (Matrix4x4*)allInfos.GetUnsafePtr();
+            NativeArray<Matrix3x4> allInfos = new NativeArray<Matrix3x4>(occluderTransforms.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+            Matrix3x4* input = (Matrix3x4*)allInfos.GetUnsafePtr();
             for (int i = 0; i < allInfos.Length; ++i)
             {
-                input[i] = occluderTransforms[i].localToWorldMatrix;
+                input[i] = new Matrix3x4(occluderTransforms[i].localToWorldMatrix);
             }
             allCubeBuffer.SetData(allInfos);
             verticesBuffer.SetData(vecs);
