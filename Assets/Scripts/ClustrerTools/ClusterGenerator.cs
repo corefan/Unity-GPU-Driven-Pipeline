@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+﻿  #if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
@@ -91,6 +91,7 @@ namespace MPipeline
     public unsafe class ClusterGenerator : MonoBehaviour
     {
         private Mesh testMesh;
+        public string fileName = "testModel";
         public Material testMat;
         public bool clear = true;
 
@@ -148,10 +149,28 @@ namespace MPipeline
             List<Vector3> normals = new List<Vector3>(16 * 6);
             if (stillLooping)
             {
-
                 first = resultCluster[resultCluster.Length - 1];
                 allFragments.Add(resultCluster);
                 goto LOOP;
+            }
+            if(resultCluster.Length < (ClusterFunctions.ClusterCount + 1))
+            {
+                NativeArray<Fragment> lastResultCluster = new NativeArray<Fragment>(ClusterFunctions.ClusterCount + 1, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for(int i = 0; i < resultCluster.Length;++i)
+                {
+                    lastResultCluster[i] = resultCluster[i];
+                }
+                for(int i = resultCluster.Length; i < lastResultCluster.Length; ++i)
+                {
+                    Fragment fg;
+                    fg.indices = new Vector4Int(0, 0, 0, 0);
+                    fg.position = Vector3.zero;
+                    fg.voxel = Vector3Int.zero;
+                    lastResultCluster[i] = fg;
+                }
+                resultCluster.Dispose();
+                resultCluster = lastResultCluster;
+                allFragments.Add(resultCluster);
             }
             gt.Dispose();
             NativeArray<ClusterMeshData> meshData = new NativeArray<ClusterMeshData>(allFragments.Count, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -184,8 +203,11 @@ namespace MPipeline
             byte[] meshDataArray;
             byte[] pointDataArray;
             ClusterFunctions.GetByteDataFromArray(meshData, pointsList, out meshDataArray, out pointDataArray);
-            File.WriteAllBytes("Assets/Resources/MapInfos.txt", meshDataArray);
-            File.WriteAllBytes("Assets/Resources/MapPoints.txt", pointDataArray);
+            string count = meshData.Length.ToString();
+            string filenameWithExtent = fileName + ".txt";
+            File.WriteAllText("Assets/Resources/MapSigns/" + filenameWithExtent, count);
+            File.WriteAllBytes("Assets/Resources/MapInfos/" + filenameWithExtent, meshDataArray);
+            File.WriteAllBytes("Assets/Resources/MapPoints/" + filenameWithExtent, pointDataArray);
             //Dispose Native Array
             meshData.Dispose();
             pointsList.Dispose();

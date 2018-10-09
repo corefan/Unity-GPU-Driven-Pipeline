@@ -63,7 +63,8 @@ LightmapSettings:
     m_CompAOExponent: 1
     m_CompAOExponentDirect: 0
     m_Padding: 2
-    m_LightmapParameters: {fileID: 15200, guid: 0000000000000000f000000000000000, type: 0}
+    m_LightmapParameters: {fileID: 15200, guid: 0000000000000000f000000000000000,
+      type: 0}
     m_LightmapsBakeMode: 1
     m_TextureCompression: 0
     m_FinalGather: 0
@@ -88,7 +89,8 @@ LightmapSettings:
     m_PVRFilteringAtrousPositionSigmaIndirect: 2
     m_PVRFilteringAtrousPositionSigmaAO: 1
     m_ShowResolutionOverlay: 1
-  m_LightingDataAsset: {fileID: 112000002, guid: 4f2511ef9cc499543a16e25eb456fab1, type: 2}
+  m_LightingDataAsset: {fileID: 112000002, guid: 4f2511ef9cc499543a16e25eb456fab1,
+    type: 2}
   m_UseShadowmask: 1
 --- !u!196 &4
 NavMeshSettings:
@@ -364,7 +366,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 1976386203}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cab20c26a98c3c24bb1a6d9fbafb98dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 2094fdd128ca0ea41bf38681b11dc52f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mat: {fileID: 2100000, guid: 818352ac241574a4291295e1eca878d9, type: 2}

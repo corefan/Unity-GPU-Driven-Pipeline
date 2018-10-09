@@ -4,6 +4,7 @@ using Unity.Collections;
 using UnityEngine.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
+using System.Text;
 
 public unsafe static class PipelineFunctions
 {
@@ -103,30 +104,43 @@ public unsafe static class PipelineFunctions
     /// <param name="baseBuffer"></param> pipeline base buffer
     public static void InitBaseBuffer(ref PipelineBaseBuffer baseBuffer, string infoPath, string pointPath)
     {
-        TextAsset pointText = Resources.Load<TextAsset>(pointPath);
-        TextAsset infoText = Resources.Load<TextAsset>(infoPath);
-        byte[] pointBytes = pointText.bytes;
-        byte[] infoBytes = infoText.bytes;
-        Point* points = null;
-        ClusterMeshData* infos = null;
-        int pointLength = 0;
-        int infoLength = 0;
-        fixed (void* ptr = &pointBytes[0])
+        TextAsset[] allFileFlags = Resources.LoadAll<TextAsset>("MapSigns");
+        int clusterCount = 0;
+        foreach(var i in allFileFlags)
         {
-            points = (Point*)ptr;
-            pointLength = pointBytes.Length / Point.SIZE;
+            clusterCount += int.Parse(i.text);
         }
-        fixed (void* ptr = &infoBytes[0])
+        StringBuilder sb = new StringBuilder(50, 150);
+        NativeArray<ClusterMeshData> allInfos = new NativeArray<ClusterMeshData>(clusterCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+        NativeArray<Point> allPoints = new NativeArray<Point>(clusterCount * PipelineBaseBuffer.CLUSTERCLIPCOUNT, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+        clusterCount = 0;
+        int pointCount = 0;
+        foreach(var i in allFileFlags)
         {
-            infos = (ClusterMeshData*)ptr;
-            infoLength = infoBytes.Length / ClusterMeshData.SIZE;
+            sb.Clear();
+            sb.Append("MapInfos/");
+            sb.Append(i.name);
+            TextAsset clusterFile = Resources.Load<TextAsset>(sb.ToString());
+            sb.Clear();
+            sb.Append("MapPoints/");
+            sb.Append(i.name);
+            TextAsset pointFile = Resources.Load<TextAsset>(sb.ToString());
+            byte[] clusterArray = clusterFile.bytes;
+            byte[] pointArray = pointFile.bytes;
+            fixed (void* source = &clusterArray[0])
+            {
+                byte* dest = (byte*)allInfos.GetUnsafePtr() + clusterCount;
+                UnsafeUtility.MemCpy(dest, source, clusterArray.Length);
+            }
+            clusterCount += clusterArray.Length;
+            fixed(void* source = &pointArray[0])
+            {
+                byte* dest = (byte*)allPoints.GetUnsafePtr() + pointCount;
+                UnsafeUtility.MemCpy(dest, source, pointArray.Length);
+            }
+            pointCount += pointArray.Length;
         }
-        NativeArray<ClusterMeshData> allInfos = new NativeArray<ClusterMeshData>(infoLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-        NativeArray<Point> allPoints = new NativeArray<Point>(pointLength, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-        void* destination = allPoints.GetUnsafePtr();
-        UnsafeUtility.MemCpy(destination, points, pointBytes.Length);
-        destination = allInfos.GetUnsafePtr();
-        UnsafeUtility.MemCpy(destination, infos, infoBytes.Length);
+        
         baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ClusterMeshData.SIZE);
         baseBuffer.clusterBuffer.SetData(allInfos);
         baseBuffer.resultBuffer = new ComputeBuffer(allInfos.Length, PipelineBaseBuffer.UINTSIZE);
@@ -134,11 +148,8 @@ public unsafe static class PipelineFunctions
         baseBuffer.verticesBuffer = new ComputeBuffer(allPoints.Length, Point.SIZE);
         baseBuffer.verticesBuffer.SetData(allPoints);
         baseBuffer.clusterCount = allInfos.Length;
-        baseBuffer.clusterOffset = 0;
         allInfos.Dispose();
         allPoints.Dispose();
-        Resources.UnloadAsset(pointText);
-        Resources.UnloadAsset(infoText);
     }
     /// <summary>
     /// Get Frustum Corners

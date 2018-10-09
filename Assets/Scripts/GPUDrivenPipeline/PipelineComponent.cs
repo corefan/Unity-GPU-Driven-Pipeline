@@ -11,10 +11,9 @@ public struct PipelineBaseBuffer
     public ComputeBuffer resultBuffer; //uint
     public ComputeBuffer verticesBuffer;    //Point
     public int clusterCount;
-    public int clusterOffset;
     public const int INDIRECTSIZE = 20;
     public const int UINTSIZE = 4;
-    public const int CLUSTERCLIPCOUNT = 64;
+    public const int CLUSTERCLIPCOUNT = 256;
     public const int CLUSTERVERTEXCOUNT = CLUSTERCLIPCOUNT * 6 / 4;
     public static class ComputeShaderKernels
     {

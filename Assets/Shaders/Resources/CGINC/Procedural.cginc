@@ -1,8 +1,8 @@
 #ifndef PROCEDURAL
 #define PROCEDURAL
 
-#define CLUSTERCLIPCOUNT 64
-#define CLUSTERVERTEXCOUNT 96
+#define CLUSTERCLIPCOUNT 256
+#define CLUSTERVERTEXCOUNT 384
 #define PLANECOUNT 6
 struct Point{
     float3 vertex;
