@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
@@ -229,12 +229,18 @@ namespace UnityEngine.Rendering.PostProcessing
 
         void OnDisable()
         {
-            if (!RuntimeUtilities.scriptableRenderPipelineActive)
+            // Have to check for null camera in case the user is doing back'n'forth between SRP and
+            // legacy
+            if (m_Camera != null)
             {
-                m_Camera.RemoveCommandBuffer(CameraEvent.BeforeReflections, m_LegacyCmdBufferBeforeReflections);
-                m_Camera.RemoveCommandBuffer(CameraEvent.BeforeLighting, m_LegacyCmdBufferBeforeLighting);
-                m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
-                m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
+                if (m_LegacyCmdBufferBeforeReflections != null)
+                    m_Camera.RemoveCommandBuffer(CameraEvent.BeforeReflections, m_LegacyCmdBufferBeforeReflections);
+                if (m_LegacyCmdBufferBeforeLighting != null)
+                    m_Camera.RemoveCommandBuffer(CameraEvent.BeforeLighting, m_LegacyCmdBufferBeforeLighting);
+                if (m_LegacyCmdBufferOpaque != null)
+                    m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffectsOpaque, m_LegacyCmdBufferOpaque);
+                if (m_LegacyCmdBuffer != null)
+                    m_Camera.RemoveCommandBuffer(CameraEvent.BeforeImageEffects, m_LegacyCmdBuffer);
             }
 
             temporalAntialiasing.Release();
@@ -401,7 +407,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
                 if (isScreenSpaceReflectionsActive)
                 {
-                    ssrRenderer.Render(ref context);
+                    ssrRenderer.Render(context);
                     opaqueOnlyEffects--;
                     var prevSource = context.source;
                     context.source = context.destination;
@@ -670,11 +676,11 @@ namespace UnityEngine.Rendering.PostProcessing
                     {
                         // We only need to configure all of this once for stereo, during OnPreCull
                         if (context.camera.stereoActiveEye != Camera.MonoOrStereoscopicEye.Right)
-                            temporalAntialiasing.ConfigureStereoJitteredProjectionMatrices(ref context);
+                            temporalAntialiasing.ConfigureStereoJitteredProjectionMatrices(context);
                     }
                     else
                     {
-                        temporalAntialiasing.ConfigureJitteredProjectionMatrix(ref context);
+                        temporalAntialiasing.ConfigureJitteredProjectionMatrix(context);
                     }
                 }
 
@@ -682,7 +688,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 var finalDestination = context.destination;
                 context.GetScreenSpaceTemporaryRT(cmd, taaTarget, 0, context.sourceFormat);
                 context.destination = taaTarget;
-                temporalAntialiasing.Render(ref context);
+                temporalAntialiasing.Render(context);
                 context.source = taaTarget;
                 context.destination = finalDestination;
 
@@ -764,7 +770,7 @@ namespace UnityEngine.Rendering.PostProcessing
             // If there's only one active effect, we can simply execute it and skip the rest
             if (count == 1)
             {
-                m_ActiveEffects[0].Render(ref context);
+                m_ActiveEffects[0].Render(context);
             }
             else
             {
@@ -789,7 +795,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 {
                     context.source = m_Targets[i];
                     context.destination = m_Targets[i + 1];
-                    m_ActiveEffects[i].Render(ref context);
+                    m_ActiveEffects[i].Render(context);
                 }
 
                 cmd.ReleaseTemporaryRT(tempTarget1);
@@ -960,7 +966,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
             if (!useTempTarget)
             {
-                effect.renderer.Render(ref context);
+                effect.renderer.Render(context);
                 return -1;
             }
 
@@ -968,7 +974,7 @@ namespace UnityEngine.Rendering.PostProcessing
             var tempTarget = m_TargetPool.Get();
             context.GetScreenSpaceTemporaryRT(context.command, tempTarget, 0, context.sourceFormat);
             context.destination = tempTarget;
-            effect.renderer.Render(ref context);
+            effect.renderer.Render(context);
             context.source = tempTarget;
             context.destination = finalDestination;
             return tempTarget;

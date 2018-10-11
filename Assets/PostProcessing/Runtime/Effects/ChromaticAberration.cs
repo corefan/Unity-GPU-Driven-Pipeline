@@ -28,7 +28,7 @@ namespace UnityEngine.Rendering.PostProcessing
     {
         Texture2D m_InternalSpectralLut;
 
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
             var spectralLut = settings.spectralLut.value;
 

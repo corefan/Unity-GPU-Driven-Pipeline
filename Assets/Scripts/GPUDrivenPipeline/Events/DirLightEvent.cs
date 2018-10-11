@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace MPipeline
 {
+    [PipelineEvent(false, true)]
     public unsafe class DirLightEvent : PipelineEvent
     {
         

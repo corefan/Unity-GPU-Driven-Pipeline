@@ -25,7 +25,7 @@ namespace UnityEngine.Rendering.PostProcessing
             ResetHistory();
         }
 
-        public abstract void Render(ref PostProcessRenderContext context);
+        public abstract void Render(PostProcessRenderContext context);
 
         internal abstract void SetSettings(PostProcessEffectSettings settings);
     }

@@ -102,7 +102,7 @@ namespace UnityEngine.Rendering.PostProcessing
             return cameraProj;
         }
 
-        public void ConfigureJitteredProjectionMatrix(ref PostProcessRenderContext context)
+        public void ConfigureJitteredProjectionMatrix(PostProcessRenderContext context)
         {
             var camera = context.camera;
             camera.nonJitteredProjectionMatrix = camera.projectionMatrix;
@@ -111,7 +111,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         // TODO: We'll probably need to isolate most of this for SRPs
-        public void ConfigureStereoJitteredProjectionMatrices(ref PostProcessRenderContext context)
+        public void ConfigureStereoJitteredProjectionMatrices(PostProcessRenderContext context)
         {
 #if  UNITY_2017_3_OR_NEWER
             var camera = context.camera;
@@ -137,7 +137,7 @@ namespace UnityEngine.Rendering.PostProcessing
 #endif
         }
 
-        void GenerateHistoryName(RenderTexture rt, int id, ref  PostProcessRenderContext context)
+        void GenerateHistoryName(RenderTexture rt, int id, PostProcessRenderContext context)
         {
             rt.name = "Temporal Anti-aliasing History id #" + id;
 
@@ -145,7 +145,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 rt.name += " for eye " + context.xrActiveEye;
         }
 
-        RenderTexture CheckHistory(int id, ref PostProcessRenderContext context)
+        RenderTexture CheckHistory(int id, PostProcessRenderContext context)
         {
             int activeEye = context.xrActiveEye;
 
@@ -159,7 +159,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 RenderTexture.ReleaseTemporary(rt);
 
                 rt = context.GetScreenSpaceTemporaryRT(0, context.sourceFormat);
-                GenerateHistoryName(rt, id, ref context);
+                GenerateHistoryName(rt, id, context);
 
                 rt.filterMode = FilterMode.Bilinear;
                 m_HistoryTextures[activeEye][id] = rt;
@@ -171,7 +171,7 @@ namespace UnityEngine.Rendering.PostProcessing
                 // On size change, simply copy the old history to the new one. This looks better
                 // than completely discarding the history and seeing a few aliased frames.
                 var rt2 = context.GetScreenSpaceTemporaryRT(0, context.sourceFormat);
-                GenerateHistoryName(rt2, id, ref context);
+                GenerateHistoryName(rt2, id, context);
 
                 rt2.filterMode = FilterMode.Bilinear;
                 m_HistoryTextures[activeEye][id] = rt2;
@@ -183,7 +183,7 @@ namespace UnityEngine.Rendering.PostProcessing
             return m_HistoryTextures[activeEye][id];
         }
 
-        internal void Render(ref PostProcessRenderContext context)
+        internal void Render(PostProcessRenderContext context)
         {
             var sheet = context.propertySheets.Get(context.resources.shaders.temporalAntialiasing);
 
@@ -191,8 +191,8 @@ namespace UnityEngine.Rendering.PostProcessing
             cmd.BeginSample("TemporalAntialiasing");
 
             int pp = m_HistoryPingPong[context.xrActiveEye];
-            var historyRead = CheckHistory(++pp % 2, ref context);
-            var historyWrite = CheckHistory(++pp % 2,ref  context);
+            var historyRead = CheckHistory(++pp % 2, context);
+            var historyWrite = CheckHistory(++pp % 2, context);
             m_HistoryPingPong[context.xrActiveEye] = ++pp % 2;
 
             const float kMotionAmplification = 100f * 60f;

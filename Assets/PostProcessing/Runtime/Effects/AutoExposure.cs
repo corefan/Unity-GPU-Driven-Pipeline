@@ -74,7 +74,7 @@ namespace UnityEngine.Rendering.PostProcessing
             }
         }
 
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
             var cmd = context.command;
             cmd.BeginSample("AutoExposureLookup");

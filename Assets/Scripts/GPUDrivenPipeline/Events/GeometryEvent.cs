@@ -6,6 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace MPipeline
 {
+    [PipelineEvent(false, true)]
     public unsafe class GeometryEvent : PipelineEvent
     {
         #region HIZDEPTH

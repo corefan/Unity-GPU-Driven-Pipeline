@@ -120,7 +120,7 @@ namespace UnityEngine.Rendering.PostProcessing
             return rt;
         }
 
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
             var colorFormat = RenderTextureFormat.DefaultHDR;
             var cocFormat = SelectFormat(RenderTextureFormat.R8, RenderTextureFormat.RHalf);

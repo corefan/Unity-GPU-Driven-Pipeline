@@ -38,18 +38,9 @@ Shader "Hidden/PostProcessing/Uber"
         TEXTURE2D_SAMPLER2D(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut);
         half _ChromaticAberration_Amount;
 
-        // Color grading
-    #if COLOR_GRADING_HDR_3D
-
         TEXTURE3D_SAMPLER3D(_Lut3D, sampler_Lut3D);
         float2 _Lut3D_Params;
 
-    #else
-
-        TEXTURE2D_SAMPLER2D(_Lut2D, sampler_Lut2D);
-        float3 _Lut2D_Params;
-
-    #endif
 
         half _PostExposure; // EV (exp2)
 
@@ -68,12 +59,21 @@ Shader "Hidden/PostProcessing/Uber"
 
         // Misc
         half _LumaInAlpha;
-
-        half4 FragUber(VaryingsDefault i) : SV_Target
+        struct v2f
         {
-            float2 uv = i.texcoord;
-
+            float4 vertex : SV_POSITION;
+            float2 uv : TEXCOORD0;
+        };
+        half4 FragUber(v2f i) : SV_Target
+        {
+            half4 color = _MainTex.Sample(sampler_MainTex, i.uv);
+            color *= _PostExposure;
+            float3 colorLutSpace = saturate(LUT_SPACE_ENCODE(color.rgb));
+            color.rgb = ApplyLut3D(TEXTURE3D_PARAM(_Lut3D, sampler_Lut3D), colorLutSpace, _Lut3D_Params);
+            return color;
+/*
             //>>> Automatically skipped by the shader optimizer when not used
+                        float2 uv = i.texcoord;
             float2 uvDistorted = Distort(i.texcoord);
             float2 uvStereoDistorted = Distort(i.texcoordStereo);
             //<<<
@@ -205,9 +205,7 @@ Shader "Hidden/PostProcessing/Uber"
 
             #if COLOR_GRADING_HDR_3D
             {
-                color *= _PostExposure;
-                float3 colorLutSpace = saturate(LUT_SPACE_ENCODE(color.rgb));
-                color.rgb = ApplyLut3D(TEXTURE3D_PARAM(_Lut3D, sampler_Lut3D), colorLutSpace, _Lut3D_Params);
+//Color 3D
             }
             #elif COLOR_GRADING_HDR_2D
             {
@@ -258,7 +256,7 @@ Shader "Hidden/PostProcessing/Uber"
             #endif
 
             // Output RGB is still HDR at that point (unless range was crunched by a tonemapper)
-            return output;
+            return output;*/
         }
 
     ENDHLSL
@@ -271,8 +269,20 @@ Shader "Hidden/PostProcessing/Uber"
         {
             HLSLPROGRAM
 
-                #pragma vertex VertUVTransform
+                #pragma vertex vert
                 #pragma fragment FragUber
+                struct appdata
+                {
+                    float4 vertex : POSITION;
+                    float2 uv : TEXCOORD0;
+                };
+                v2f vert(appdata v)
+                {
+                    v2f o;
+                    o.vertex = v.vertex;
+                    o.uv = v.uv;
+                    return o;
+                }
 
             ENDHLSL
         }

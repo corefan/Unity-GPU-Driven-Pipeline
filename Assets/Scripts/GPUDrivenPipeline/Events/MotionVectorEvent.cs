@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace MPipeline
 {
+    [PipelineEvent(false, true)]
     public class MotionVectorEvent : PipelineEvent
     {
         private Material motionVecMat;

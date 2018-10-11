@@ -23,7 +23,7 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 1
+  m_AmbientIntensity: 0.67
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
@@ -260,7 +260,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 934917473}
-  m_Mesh: {fileID: 4300000, guid: 3dd0ae5c39048044da789fd46405eb2f, type: 3}
+  m_Mesh: {fileID: 4300000, guid: ab92da5d4fac64e4c83f818ae4062a18, type: 3}
 --- !u!4 &934917478
 Transform:
   m_ObjectHideFlags: 0
@@ -334,8 +334,8 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1379567076}
-  m_LocalRotation: {x: -0.22805429, y: 0.6592223, z: -0.22051673, w: -0.68175477}
-  m_LocalPosition: {x: 12.35, y: 5.43, z: 1.35}
+  m_LocalRotation: {x: -0.06941996, y: 0.9294132, z: -0.23102108, w: -0.2792869}
+  m_LocalPosition: {x: 13.767254, y: 5.183423, z: -11.242823}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -371,7 +371,7 @@ Light:
   serializedVersion: 8
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0.2
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -488,10 +488,10 @@ GameObject:
   - component: {fileID: 1657096686}
   - component: {fileID: 1657096688}
   - component: {fileID: 1657096689}
-  - component: {fileID: 1657096693}
   - component: {fileID: 1657096691}
   - component: {fileID: 1657096690}
   - component: {fileID: 1657096692}
+  - component: {fileID: 1657096693}
   m_Layer: 0
   m_Name: PipelineSettings
   m_TagString: Untagged
@@ -521,7 +521,8 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
+  m_Children:
+  - {fileID: 2067749232}
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -679,12 +680,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
   m_enableBeforePipeline: 1
-  layer: 3000
+  layer: 2600
   jitterSpread: 0.75
   sharpness: 0.25
   stationaryBlending: 0.95
   motionBlending: 0.85
-  processingBase: []
 --- !u!114 &1657096693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -694,14 +694,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 1657096685}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4cb3b831255ec8e4bb604a230143fe7f, type: 3}
+  m_Script: {fileID: 11500000, guid: d237876de09eba543825aad2b835200b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_enabledInPipeline: 0
+  m_enabledInPipeline: 1
   m_enableBeforePipeline: 0
-  layer: 2080
-  mSpotlights:
-  - {fileID: 1379567077}
+  layer: 3000
+  profile: {fileID: 11400000, guid: 6d0d1a1ad21c9604896988c0fd15fc68, type: 2}
+  resources: {fileID: 11400000, guid: d82512f9c8e5d4a4d938b575d47f88d4, type: 2}
 --- !u!1 &2000166144
 GameObject:
   m_ObjectHideFlags: 0
@@ -742,7 +742,7 @@ MeshRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000166144}
   m_Enabled: 1
-  m_CastShadows: 1
+  m_CastShadows: 0
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_MotionVectors: 1
@@ -787,11 +787,41 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000166144}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17.37, y: 2.68, z: -9.98}
+  m_LocalPosition: {x: 17.37, y: 2.68, z: -1.05}
   m_LocalScale: {x: 1, y: 17.312338, z: 27.31234}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 6
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2067749230
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2067749232}
+  m_Layer: 0
+  m_Name: PostProcessingEvents
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2067749232
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2067749230}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 18.75811, y: 2.3452525, z: 3.8804522}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1657096687}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1297850528536201731
 PrefabInstance:

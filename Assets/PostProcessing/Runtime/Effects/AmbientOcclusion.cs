@@ -169,7 +169,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         // Unused
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
         }
     }

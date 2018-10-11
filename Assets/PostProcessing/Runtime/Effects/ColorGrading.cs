@@ -171,7 +171,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
         readonly HableCurve m_HableCurve = new HableCurve();
 
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
             var gradingMode = settings.gradingMode.value;
             var supportComputeTex3D = SystemInfo.supports3DRenderTextures

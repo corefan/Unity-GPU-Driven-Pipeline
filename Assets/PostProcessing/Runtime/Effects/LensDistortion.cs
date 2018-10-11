@@ -37,7 +37,7 @@ namespace UnityEngine.Rendering.PostProcessing
 
     public sealed class LensDistortionRenderer : PostProcessEffectRenderer<LensDistortion>
     {
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
             var sheet = context.uberSheet;
             

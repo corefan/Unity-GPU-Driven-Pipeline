@@ -36,7 +36,7 @@ namespace UnityEngine.Rendering.PostProcessing
         const int k_SampleCount = 1024;
         int m_SampleIndex;
 
-        public override void Render(ref PostProcessRenderContext context)
+        public override void Render(PostProcessRenderContext context)
         {
 #if POSTFX_DEBUG_STATIC_GRAIN
             // Chosen by a fair dice roll

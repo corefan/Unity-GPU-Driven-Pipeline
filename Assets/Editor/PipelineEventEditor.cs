@@ -7,14 +7,34 @@ namespace MPipeline
     [CustomEditor(typeof(PipelineEvent), true)]
     public class PipelineEventEditor : Editor
     {
+        PipelineEvent target;
+        PipelineEventAttribute ppAttribute = null;
+        private void OnEnable()
+        {
+            target = serializedObject.targetObject as PipelineEvent;
+            object[] allAttris = target.GetType().GetCustomAttributes(typeof(PipelineEventAttribute), true);
+            foreach (var i in allAttris)
+            {
+                if (i.GetType() == typeof(PipelineEventAttribute))
+                {
+                    ppAttribute = i as PipelineEventAttribute;
+                }
+            }
+        }
 
         public override void OnInspectorGUI()
         {
-            PipelineEvent target = serializedObject.targetObject as PipelineEvent;
             EditorGUILayout.LabelField("Pipeline Settings:");
-            target.enabledInPipeline = EditorGUILayout.Toggle("Enable In Pipeline", target.enabledInPipeline);
-            target.enableBeforePipeline = EditorGUILayout.Toggle("Enable Before Pipeline", target.enableBeforePipeline);
+            if (ppAttribute != null)
+            {
+                if (ppAttribute.postRender)
+                    target.enabledInPipeline = EditorGUILayout.Toggle("Enable In Pipeline", target.enabledInPipeline);
+                if (ppAttribute.preRender)
+                    target.enableBeforePipeline = EditorGUILayout.Toggle("Enable Before Pipeline", target.enableBeforePipeline);
+            }
             base.OnInspectorGUI();
         }
+
+        
     }
 }
