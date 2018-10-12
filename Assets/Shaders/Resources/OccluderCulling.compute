@@ -2,7 +2,8 @@
 #pragma kernel CSMain
 #pragma kernel Clear
 #define PLANECOUNT 6
-float4 planes[PLANECOUNT];
+shared float4 planes[PLANECOUNT];
+uint _CullingPlaneCount;
 uint _Count;
 float PlaneTest(float3x4 info)
 {
@@ -11,8 +12,7 @@ float PlaneTest(float3x4 info)
     float3 forward = float3(info._m02, info._m12, info._m22);
     float3 position = float3(info._m03, info._m13, info._m23);
     float result = 1;
-    [unroll]
-    for (int i = 0; i < 6; ++i)
+    for (int i = 0; i < _CullingPlaneCount; ++i)
     {
         float4 plane = planes[i];
         float r = dot(position, plane.xyz);

@@ -65,8 +65,8 @@ namespace MPipeline
                 RenderPipeline.drawEvents.Remove(this);
             }
         }
-        protected virtual void Awake()
-        {
+        public void InitEvent(PipelineResources resources)
+        { 
             if (m_enabledInPipeline)
             {
                 RenderPipeline.drawEvents.InsertTo(this, compareFunc);
@@ -75,14 +75,18 @@ namespace MPipeline
             {
                 RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
             }
+            Init(resources);
         }
-        protected virtual void OnDestroy()
+        public void DisposeEvent()
         {
             if (m_enabledInPipeline)
                 RenderPipeline.drawEvents.Remove(this);
             if (m_enableBeforePipeline)
                 RenderPipeline.preRenderEvents.Remove(this);
+            Dispose();
         }
+        protected abstract void Init(PipelineResources resources);
+        protected abstract void Dispose();
         public abstract void FrameUpdate(ref PipelineCommandData data);
         public abstract void PreRenderFrame(Camera cam);
     }

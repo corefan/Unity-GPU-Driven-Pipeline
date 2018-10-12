@@ -221,13 +221,6 @@ public struct StaticFit
     public Camera mainCamTrans;
     public NativeArray<Vector3> frustumCorners;
 }
-
-public struct PipelineConstEntity
-{
-    public ComputeShader gpuFrustumShader;
-    public RenderArray arrayCollection;
-}
-
 public struct RenderArray
 {
     public Vector4[] farFrustumCorner;
@@ -289,5 +282,6 @@ public struct PipelineCommandData
     public Matrix4x4 inverseVP;
     public Camera cam;
     public PipelineBaseBuffer baseBuffer;
-    public PipelineConstEntity constEntity;
+    public RenderArray arrayCollection;
+    public MPipeline.PipelineResources resources;
 }

@@ -293,6 +293,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14e25129dba4f9f4a8fdf690a9e8d118, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1111116810
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1111116808}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b8eb9fca4b81414b949a9baf9820052, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resources: {fileID: 11400000, guid: 50b544c2017a17d4ca53c689c3b49d03, type: 2}
+  eventParent: {fileID: 1657096685}
 --- !u!1 &1379567076
 GameObject:
   m_ObjectHideFlags: 0
@@ -485,7 +499,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1657096687}
-  - component: {fileID: 1657096686}
   - component: {fileID: 1657096688}
   - component: {fileID: 1657096689}
   - component: {fileID: 1657096691}
@@ -499,18 +512,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1657096686
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1657096685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b8eb9fca4b81414b949a9baf9820052, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &1657096687
 Transform:
   m_ObjectHideFlags: 0
@@ -521,8 +522,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children:
-  - {fileID: 2067749232}
+  m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -542,7 +542,7 @@ MonoBehaviour:
   m_enableBeforePipeline: 0
   layer: 2000
   hizDepth:
-    enableHiz: 0
+    enableHiz: 1
     occluderTransforms:
     - {fileID: 2000166148}
     cube: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
@@ -787,41 +787,11 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2000166144}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 17.37, y: 2.68, z: -1.05}
+  m_LocalPosition: {x: 22.02, y: 2.68, z: -6.57}
   m_LocalScale: {x: 1, y: 17.312338, z: 27.31234}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 6
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2067749230
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2067749232}
-  m_Layer: 0
-  m_Name: PostProcessingEvents
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2067749232
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2067749230}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 18.75811, y: 2.3452525, z: 3.8804522}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_Children: []
-  m_Father: {fileID: 1657096687}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1297850528536201731
 PrefabInstance:
@@ -913,7 +883,7 @@ PrefabInstance:
     - target: {fileID: 6044620143893804824, guid: ac5ee964c3188c9419367fe0e61ca119,
         type: 3}
       propertyPath: far clip plane
-      value: 100
+      value: 1000
       objectReference: {fileID: 0}
     - target: {fileID: 6044620143893804824, guid: ac5ee964c3188c9419367fe0e61ca119,
         type: 3}
@@ -934,6 +904,11 @@ PrefabInstance:
         type: 3}
       propertyPath: sprintSpeed
       value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 6044620143893804824, guid: ac5ee964c3188c9419367fe0e61ca119,
+        type: 3}
+      propertyPath: near clip plane
+      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ac5ee964c3188c9419367fe0e61ca119, type: 3}

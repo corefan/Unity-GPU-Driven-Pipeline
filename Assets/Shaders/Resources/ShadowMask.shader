@@ -113,10 +113,10 @@ static const float2 DirPoissonDisks[64] =
 			Texture2D<float4> _CameraGBufferTexture2; SamplerState sampler_CameraGBufferTexture2;
 			float3 _LightFinalColor;
 			#define RANDOM(seed) cos(sin(seed * float2(54.135764, 77.468761) + float2(631.543147, 57.4687)) * float2(657.387478, 86.1653) + float2(65.15686, 15.3574563))
-			float GetShadow(inout float4 worldPos, float2 screenUV)
+			float GetShadow(inout float4 worldPos, float depth, float2 screenUV)
 			{
 				worldPos /= worldPos.w;
-				float eyeDistance = length(worldPos.xyz - _WorldSpaceCameraPos);
+				float eyeDistance = LinearEyeDepth(depth);
 				float4 eyeRange = eyeDistance < _ShadowDisableDistance;
 				eyeRange.yzw -= eyeRange.xyz;
 				float zAxisUV = dot(eyeRange, float4(0, 1, 2, 3));
@@ -145,9 +145,9 @@ static const float2 DirPoissonDisks[64] =
 				return atten;
 			}
 
-			float GetHardShadow(float3 worldPos)
+			float GetHardShadow(float3 worldPos, float depth)
 			{
-				float eyeDistance = length(worldPos.xyz - _WorldSpaceCameraPos);
+				float eyeDistance = LinearEyeDepth(depth);
 				float4 eyeRange = eyeDistance < _ShadowDisableDistance;
 				eyeRange.yzw -= eyeRange.xyz;
 				float zAxisUV = dot(eyeRange, float4(0, 1, 2, 3));
@@ -184,7 +184,7 @@ ENDCG
     			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
 				float depth = gbuffer2.w;
 				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
-				float atten = GetShadow(wpos, i.uv);
+				float atten = GetShadow(wpos, depth, i.uv);
 				UnityStandardData data = UnityStandardDataFromGbuffer(gbuffer0, gbuffer1, gbuffer2);
 				float3 eyeVec = normalize(wpos.xyz - _WorldSpaceCameraPos);
 				half oneMinusReflectivity = 1 - SpecularStrength(data.specularColor.rgb);
@@ -250,7 +250,7 @@ ENDCG
 				for(float i = 0; i < 1; i += step)
 				{
 					float3 samplePos = lerp(_WorldSpaceCameraPos, wpos.xyz, i);
-					value += GetHardShadow(samplePos);
+					value += GetHardShadow(samplePos, depth);
 				}
 				value *= step * 0.1 * len;
 				return value;

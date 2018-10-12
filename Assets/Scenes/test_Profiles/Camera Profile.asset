@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Camera Profile
   m_EditorClassIdentifier: 
   settings:
-  - {fileID: 114233418685120642}
---- !u!114 &114233418685120642
+  - {fileID: 114683606451694958}
+--- !u!114 &114683606451694958
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -85,7 +85,7 @@ MonoBehaviour:
     value: 0
   postExposure:
     overrideState: 1
-    value: 0.5
+    value: 2
   contrast:
     overrideState: 0
     value: 0

@@ -69,9 +69,9 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         // [down,up]
-        Level[] m_Pyramid;
+        
         const int k_MaxPyramidSize = 16; // Just to make sure we handle 64k screens... Future-proof!
-
+        Level[] m_Pyramid;
         struct Level
         {
             internal int down;

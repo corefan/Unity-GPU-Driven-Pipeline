@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
-using ColorGrading = MPipeline.ColorGrading;
-using System;
 namespace MPipeline
 {
     [PipelineEvent(true, true)]
@@ -30,10 +28,9 @@ namespace MPipeline
         private Material taaMat;
         private RenderTexture historyTex;
         private PostProcessAction taaFunction;
-        protected override void Awake()
+        protected override void Init(PipelineResources resources)
         {
-            base.Awake();
-            taaMat = new Material(Shader.Find("Hidden/PostProcessing/TemporalAntialiasing"));
+            taaMat = new Material(resources.taaShader);
             taaFunction = (ref PipelineCommandData data, RenderTexture source, RenderTexture dest) =>
             {
                 SetHistory(data.cam, data.targets.renderTarget);
@@ -49,15 +46,14 @@ namespace MPipeline
             };
         }
 
-        protected override void OnDestroy()
+        protected override void Dispose()
         {
-            base.OnDestroy();
             Destroy(taaMat);
         }
 
         public override void FrameUpdate(ref PipelineCommandData data)
         {
-            PostFunctions.Blit(ref data, taaFunction);
+            PostFunctions.RunPostProcess(ref data, taaFunction);
         }
         
         public override void PreRenderFrame(Camera cam)

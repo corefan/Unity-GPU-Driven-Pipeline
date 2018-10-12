@@ -35,8 +35,8 @@ public unsafe static class PipelineFunctions
         farClipPlane[2] = farLeftTop;
         farClipPlane[3] = farRightTop;
         Plane plane;
-        //Near
-        plane = new Plane(nearRightTop, nearRightButtom, nearLeftButtom);
+        //Far
+        plane = new Plane(farLeftButtom, farRightButtom, farRightTop);
         cullingPlanes[0] = plane.normal;
         cullingPlanes[0].w = plane.distance;
         //Up
@@ -55,8 +55,8 @@ public unsafe static class PipelineFunctions
         plane = new Plane(farRightButtom, nearRightButtom, nearRightTop);
         cullingPlanes[4] = plane.normal;
         cullingPlanes[4].w = plane.distance;
-        //Far
-        plane = new Plane(farLeftButtom, farRightButtom, farRightTop);
+        //Near
+        plane = new Plane(nearRightTop, nearRightButtom, nearLeftButtom);
         cullingPlanes[5] = plane.normal;
         cullingPlanes[5].w = plane.distance;
 
@@ -72,8 +72,8 @@ public unsafe static class PipelineFunctions
         Vector3 farRightButtom = invVp.MultiplyPoint(new Vector3(1, -1, 0));
         Vector3 farRightTop = invVp.MultiplyPoint(new Vector3(1, 1, 0));
         Plane plane;
-        //Near
-        plane = new Plane(nearRightTop, nearRightButtom, nearLeftButtom);
+        //Far
+        plane = new Plane(farLeftButtom, farRightButtom, farRightTop);
         cullingPlanes[0] = plane.normal;
         cullingPlanes[0].w = plane.distance;
         //Up
@@ -92,8 +92,8 @@ public unsafe static class PipelineFunctions
         plane = new Plane(farRightButtom, nearRightButtom, nearRightTop);
         cullingPlanes[4] = plane.normal;
         cullingPlanes[4].w = plane.distance;
-        //Far
-        plane = new Plane(farLeftButtom, farRightButtom, farRightTop);
+        //Near
+        plane = new Plane(nearRightTop, nearRightButtom, nearLeftButtom);
         cullingPlanes[5] = plane.normal;
         cullingPlanes[5].w = plane.distance;
 
@@ -102,11 +102,11 @@ public unsafe static class PipelineFunctions
     /// Initialize pipeline buffers
     /// </summary>
     /// <param name="baseBuffer"></param> pipeline base buffer
-    public static void InitBaseBuffer(ref PipelineBaseBuffer baseBuffer, string infoPath, string pointPath)
+    public static void InitBaseBuffer(ref PipelineBaseBuffer baseBuffer)
     {
         TextAsset[] allFileFlags = Resources.LoadAll<TextAsset>("MapSigns");
         int clusterCount = 0;
-        foreach(var i in allFileFlags)
+        foreach (var i in allFileFlags)
         {
             clusterCount += int.Parse(i.text);
         }
@@ -115,7 +115,7 @@ public unsafe static class PipelineFunctions
         NativeArray<Point> allPoints = new NativeArray<Point>(clusterCount * PipelineBaseBuffer.CLUSTERCLIPCOUNT, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
         clusterCount = 0;
         int pointCount = 0;
-        foreach(var i in allFileFlags)
+        foreach (var i in allFileFlags)
         {
             sb.Clear();
             sb.Append("MapInfos/");
@@ -133,14 +133,14 @@ public unsafe static class PipelineFunctions
                 UnsafeUtility.MemCpy(dest, source, clusterArray.Length);
             }
             clusterCount += clusterArray.Length;
-            fixed(void* source = &pointArray[0])
+            fixed (void* source = &pointArray[0])
             {
                 byte* dest = (byte*)allPoints.GetUnsafePtr() + pointCount;
                 UnsafeUtility.MemCpy(dest, source, pointArray.Length);
             }
             pointCount += pointArray.Length;
         }
-        
+
         baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ClusterMeshData.SIZE);
         baseBuffer.clusterBuffer.SetData(allInfos);
         baseBuffer.resultBuffer = new ComputeBuffer(allInfos.Length, PipelineBaseBuffer.UINTSIZE);
@@ -286,8 +286,9 @@ public unsafe static class PipelineFunctions
         geometry.SetGlobalBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
         geometry.SetGlobalBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
     }
-    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, int kernel)
+    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, int kernel, bool isOrtho)
     {
+        computeShader.SetInt(ShaderIDs._CullingPlaneCount, isOrtho ? 6 : 5);
         computeShader.Dispatch(1, 1, 1, 1);
         ComputeShaderUtility.Dispatch(computeShader, kernel, baseBuffer.clusterCount, 64);
     }
@@ -302,15 +303,15 @@ public unsafe static class PipelineFunctions
         invVP = vp.inverse;
     }
     public static void DrawShadow(Camera currentCam,
-        ref PipelineConstEntity constEntity,
+        ComputeShader gpuFrustumShader,
+        ref RenderArray arrayCollection,
         ref PipelineBaseBuffer baseBuffer,
         ref ShadowmapSettings settings,
         ref ShadowMapComponent shadMap,
         Matrix4x4[] cascadeShadowMapVP,
         Vector4[] shadowFrustumPlanes)
     {
-        var arr = constEntity.arrayCollection;
-        var gpuFrustumShader = constEntity.gpuFrustumShader;
+        var arr = arrayCollection;
         StaticFit staticFit;
         staticFit.resolution = settings.resolution;
         staticFit.mainCamTrans = currentCam;
@@ -330,8 +331,8 @@ public unsafe static class PipelineFunctions
             Matrix4x4 invpVPMatrix;
             SetShadowCameraPositionStaticFit(ref staticFit, ref shadMap.shadCam, pass, cascadeShadowMapVP, out invpVPMatrix);
             GetCullingPlanes(ref invpVPMatrix, shadowFrustumPlanes);
-            SetBaseBuffer(ref baseBuffer, constEntity.gpuFrustumShader, shadowFrustumPlanes, 0);
-            RunCullDispatching(ref baseBuffer, gpuFrustumShader, 0);
+            SetBaseBuffer(ref baseBuffer, gpuFrustumShader, shadowFrustumPlanes, 0);
+            RunCullDispatching(ref baseBuffer, gpuFrustumShader, 0, true);
             float* biasList = (float*)UnsafeUtility.AddressOf(ref settings.bias);
             UpdateCascadeState(ref shadMap, biasList[pass] / currentCam.farClipPlane, pass);
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, baseBuffer.instanceCountBuffer);
@@ -340,7 +341,6 @@ public unsafe static class PipelineFunctions
     }
     public static void InitRenderTarget(ref RenderTargets tar, Camera tarcam, List<RenderTexture> collectRT)
     {
-        collectRT.Clear();
         tar.gbufferTextures[0] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, collectRT);
         tar.gbufferTextures[1] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, collectRT);
         tar.gbufferTextures[2] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBFloat, collectRT);
@@ -365,9 +365,18 @@ public unsafe static class PipelineFunctions
         return rt;
     }
 
+
     public static RenderTexture GetTemporary(int width, int height, int depth, RenderTextureFormat format, List<RenderTexture> collectList)
     {
         RenderTexture rt = RenderTexture.GetTemporary(width, height, depth, format, RenderTextureReadWrite.Linear);
+        collectList.Add(rt);
+        return rt;
+    }
+
+    public static RenderTexture GetTemporary(int width, int height, int depth, RenderTextureFormat format, RenderTextureReadWrite readWrite, FilterMode filterMode, List<RenderTexture> collectList)
+    {
+        RenderTexture rt = RenderTexture.GetTemporary(width, height, depth, format, readWrite);
+        rt.filterMode = filterMode;
         collectList.Add(rt);
         return rt;
     }
@@ -378,6 +387,7 @@ public unsafe static class PipelineFunctions
         {
             RenderTexture.ReleaseTemporary(i);
         }
+        tar.Clear();
     }
 
     public static void DrawDirLight(CommandBuffer afterLightCommand, Material shadMaskMat, int pass)

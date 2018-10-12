@@ -10,11 +10,10 @@ namespace MPipeline.Light
         public MSpotLight[] mSpotlights;
         private Vector4[] corners = null;
         private ComputeBuffer indirectSpotBuffer;
-        protected override void Awake()
+        protected override void Init(PipelineResources resources)
         {
-            base.Awake();
             corners = new Vector4[5];
-            spotLightMaterial = new Material(Shader.Find("Hidden/SpotLight"));
+            spotLightMaterial = new Material(resources.spotlightShader);
             indirectSpotBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
             NativeArray<uint> newInt = new NativeArray<uint>(5, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
             newInt[0] = 18;
@@ -26,9 +25,8 @@ namespace MPipeline.Light
             newInt.Dispose();
         }
 
-        protected override void OnDestroy()
+        protected override void Dispose()
         {
-            base.OnDestroy();
             Destroy(spotLightMaterial);
             indirectSpotBuffer.Dispose();
         }

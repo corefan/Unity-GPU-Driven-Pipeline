@@ -33,7 +33,7 @@ public static class GraphicsUtility
         }
     }
 
-    public static Mesh m_mesh;
+    private static Mesh m_mesh;
     public static void BlitMRT(this CommandBuffer buffer, RenderTargetIdentifier[] colorIdentifier, RenderTargetIdentifier depthIdentifier, Material mat, int pass)
     {
         buffer.SetRenderTarget(colorIdentifier, depthIdentifier);

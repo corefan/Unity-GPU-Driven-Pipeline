@@ -10,7 +10,7 @@ namespace UnityEngine.Rendering.PostProcessing
     public sealed class PostProcessResources : ScriptableObject
     {
         [Serializable]
-        public sealed class Shaders
+        public struct Shaders
         {
             public Shader bloom;
             public Shader copy;
@@ -42,7 +42,7 @@ namespace UnityEngine.Rendering.PostProcessing
         }
 
         [Serializable]
-        public sealed class ComputeShaders
+        public struct ComputeShaders
         {
             public ComputeShader autoExposure;
             public ComputeShader exposureHistogram;

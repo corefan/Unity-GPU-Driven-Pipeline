@@ -31,55 +31,49 @@ Shader "Hidden/PostProcessing/Uber"
         TEXTURE2D_SAMPLER2D(_Bloom_DirtTex, sampler_Bloom_DirtTex);
         float4 _BloomTex_TexelSize;
         float4 _Bloom_DirtTileOffset; // xy: tiling, zw: offset
-        half3 _Bloom_Settings; // x: sampleScale, y: intensity, z: dirt intensity
-        half3 _Bloom_Color;
+        float3 _Bloom_Settings; // x: sampleScale, y: intensity, z: dirt intensity
+        float3 _Bloom_Color;
 
         // Chromatic aberration
         TEXTURE2D_SAMPLER2D(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut);
-        half _ChromaticAberration_Amount;
+        float _ChromaticAberration_Amount;
 
         TEXTURE3D_SAMPLER3D(_Lut3D, sampler_Lut3D);
         float2 _Lut3D_Params;
 
 
-        half _PostExposure; // EV (exp2)
+        float _PostExposure; // EV (exp2)
 
         // Vignette
-        half3 _Vignette_Color;
-        half2 _Vignette_Center; // UV space
-        half4 _Vignette_Settings; // x: intensity, y: smoothness, z: roundness, w: rounded
-        half _Vignette_Opacity;
-        half _Vignette_Mode; // <0.5: procedural, >=0.5: masked
+        float3 _Vignette_Color;
+        float2 _Vignette_Center; // UV space
+        float4 _Vignette_Settings; // x: intensity, y: smoothness, z: roundness, w: rounded
+        float _Vignette_Opacity;
+        float _Vignette_Mode; // <0.5: procedural, >=0.5: masked
         TEXTURE2D_SAMPLER2D(_Vignette_Mask, sampler_Vignette_Mask);
 
         // Grain
         TEXTURE2D_SAMPLER2D(_GrainTex, sampler_GrainTex);
-        half2 _Grain_Params1; // x: lum_contrib, y: intensity
+        float2 _Grain_Params1; // x: lum_contrib, y: intensity
         float4 _Grain_Params2; // x: xscale, h: yscale, z: xoffset, w: yoffset
 
         // Misc
-        half _LumaInAlpha;
+        float _LumaInAlpha;
         struct v2f
         {
             float4 vertex : SV_POSITION;
             float2 uv : TEXCOORD0;
         };
-        half4 FragUber(v2f i) : SV_Target
+        float4 FragUber(v2f i) : SV_Target
         {
-            half4 color = _MainTex.Sample(sampler_MainTex, i.uv);
-            color *= _PostExposure;
-            float3 colorLutSpace = saturate(LUT_SPACE_ENCODE(color.rgb));
-            color.rgb = ApplyLut3D(TEXTURE3D_PARAM(_Lut3D, sampler_Lut3D), colorLutSpace, _Lut3D_Params);
-            return color;
-/*
+
             //>>> Automatically skipped by the shader optimizer when not used
-                        float2 uv = i.texcoord;
-            float2 uvDistorted = Distort(i.texcoord);
-            float2 uvStereoDistorted = Distort(i.texcoordStereo);
+            float2 uv = i.uv;
+            float2 uvDistorted = Distort(uv);
             //<<<
 
-            half autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
-            half4 color = (0.0).xxxx;
+            float autoExposure = SAMPLE_TEXTURE2D(_AutoExposureTex, sampler_AutoExposureTex, uv).r;
+            float4 color = (0.0).xxxx;
 
             // Inspired by the method described in "Rendering Inside" [Playdead 2016]
             // https://twitter.com/pixelmager/status/717019757766123520
@@ -92,13 +86,13 @@ Shader "Hidden/PostProcessing/Uber"
                 int samples = clamp(int(length(_MainTex_TexelSize.zw * diff / 2.0)), 3, MAX_CHROMATIC_SAMPLES);
                 float2 delta = diff / samples;
                 float2 pos = uv;
-                half4 sum = (0.0).xxxx, filterSum = (0.0).xxxx;
+                float4 sum = (0.0).xxxx, filterSum = (0.0).xxxx;
 
                 for (int i = 0; i < samples; i++)
                 {
-                    half t = (i + 0.5) / samples;
-                    half4 s = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(pos)), 0);
-                    half4 filter = half4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(t, 0.0), 0).rgb, 1.0);
+                    float t = (i + 0.5) / samples;
+                    float4 s = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(pos)), 0);
+                    float4 filter = float4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(t, 0.0), 0).rgb, 1.0);
 
                     sum += s * filter;
                     filterSum += filter;
@@ -113,21 +107,21 @@ Shader "Hidden/PostProcessing/Uber"
                 float2 end = uv - coords * dot(coords, coords) * _ChromaticAberration_Amount;
                 float2 delta = (end - uv) / 3;
 
-                half4 filterA = half4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(0.5 / 3, 0.0), 0).rgb, 1.0);
-                half4 filterB = half4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(1.5 / 3, 0.0), 0).rgb, 1.0);
-                half4 filterC = half4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(2.5 / 3, 0.0), 0).rgb, 1.0);
+                float4 filterA = float4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(0.5 / 3, 0.0), 0).rgb, 1.0);
+                float4 filterB = float4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(1.5 / 3, 0.0), 0).rgb, 1.0);
+                float4 filterC = float4(SAMPLE_TEXTURE2D_LOD(_ChromaticAberration_SpectralLut, sampler_ChromaticAberration_SpectralLut, float2(2.5 / 3, 0.0), 0).rgb, 1.0);
 
-                half4 texelA = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(uv)), 0);
-                half4 texelB = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(delta + uv)), 0);
-                half4 texelC = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(delta * 2.0 + uv)), 0);
+                float4 texelA = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(uv)), 0);
+                float4 texelB = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(delta + uv)), 0);
+                float4 texelC = SAMPLE_TEXTURE2D_LOD(_MainTex, sampler_MainTex, UnityStereoTransformScreenSpaceTex(Distort(delta * 2.0 + uv)), 0);
 
-                half4 sum = texelA * filterA + texelB * filterB + texelC * filterC;
-                half4 filterSum = filterA + filterB + filterC;
+                float4 sum = texelA * filterA + texelB * filterB + texelC * filterC;
+                float4 filterSum = filterA + filterB + filterC;
                 color = sum / filterSum;
             }
             #else
             {
-                color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uvStereoDistorted);
+                color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, uvDistorted);
             }
             #endif
 
@@ -143,21 +137,21 @@ Shader "Hidden/PostProcessing/Uber"
             #if BLOOM || BLOOM_LOW
             {
                 #if BLOOM
-                half4 bloom = UpsampleTent(TEXTURE2D_PARAM(_BloomTex, sampler_BloomTex), uvDistorted, _BloomTex_TexelSize.xy, _Bloom_Settings.x);
+                float4 bloom = UpsampleTent(TEXTURE2D_PARAM(_BloomTex, sampler_BloomTex), uvDistorted, _BloomTex_TexelSize.xy, _Bloom_Settings.x);
                 #else
-                half4 bloom = UpsampleBox(TEXTURE2D_PARAM(_BloomTex, sampler_BloomTex), uvDistorted, _BloomTex_TexelSize.xy, _Bloom_Settings.x);
+                float4 bloom = UpsampleBox(TEXTURE2D_PARAM(_BloomTex, sampler_BloomTex), uvDistorted, _BloomTex_TexelSize.xy, _Bloom_Settings.x);
                 #endif
 
                 // UVs should be Distort(uv * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw)
                 // but considering we use a cover-style scale on the dirt texture the difference
                 // isn't massive so we chose to save a few ALUs here instead in case lens distortion
                 // is active
-                half4 dirt = half4(SAMPLE_TEXTURE2D(_Bloom_DirtTex, sampler_Bloom_DirtTex, uvDistorted * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw).rgb, 0.0);
+                float4 dirt = float4(SAMPLE_TEXTURE2D(_Bloom_DirtTex, sampler_Bloom_DirtTex, uvDistorted * _Bloom_DirtTileOffset.xy + _Bloom_DirtTileOffset.zw).rgb, 0.0);
 
                 // Additive bloom (artist friendly)
                 bloom *= _Bloom_Settings.y;
                 dirt *= _Bloom_Settings.z;
-                color += bloom * half4(_Bloom_Color, 1.0);
+                color += bloom * float4(_Bloom_Color, 1.0);
                 color += dirt * bloom;
             }
             #endif
@@ -167,16 +161,16 @@ Shader "Hidden/PostProcessing/Uber"
                 UNITY_BRANCH
                 if (_Vignette_Mode < 0.5)
                 {
-                    half2 d = abs(uvDistorted - _Vignette_Center) * _Vignette_Settings.x;
+                    float2 d = abs(uvDistorted - _Vignette_Center) * _Vignette_Settings.x;
                     d.x *= lerp(1.0, _ScreenParams.x / _ScreenParams.y, _Vignette_Settings.w);
                     d = pow(saturate(d), _Vignette_Settings.z); // Roundness
-                    half vfactor = pow(saturate(1.0 - dot(d, d)), _Vignette_Settings.y);
+                    float vfactor = pow(saturate(1.0 - dot(d, d)), _Vignette_Settings.y);
                     color.rgb *= lerp(_Vignette_Color, (1.0).xxx, vfactor);
                     color.a = lerp(1.0, color.a, vfactor);
                 }
                 else
                 {
-                    half vfactor = SAMPLE_TEXTURE2D(_Vignette_Mask, sampler_Vignette_Mask, uvDistorted).a;
+                    float vfactor = SAMPLE_TEXTURE2D(_Vignette_Mask, sampler_Vignette_Mask, uvDistorted).a;
 
                     #if !UNITY_COLORSPACE_GAMMA
                     {
@@ -184,7 +178,7 @@ Shader "Hidden/PostProcessing/Uber"
                     }
                     #endif
 
-                    half3 new_color = color.rgb * lerp(_Vignette_Color, (1.0).xxx, vfactor);
+                    float3 new_color = color.rgb * lerp(_Vignette_Color, (1.0).xxx, vfactor);
                     color.rgb = lerp(color.rgb, new_color, _Vignette_Opacity);
                     color.a = lerp(1.0, color.a, vfactor);
                 }
@@ -193,7 +187,7 @@ Shader "Hidden/PostProcessing/Uber"
 
             #if GRAIN
             {
-                half3 grain = SAMPLE_TEXTURE2D(_GrainTex, sampler_GrainTex, i.texcoordStereo * _Grain_Params2.xy + _Grain_Params2.zw).rgb;
+                float3 grain = SAMPLE_TEXTURE2D(_GrainTex, sampler_GrainTex, i.texcoordStereo * _Grain_Params2.xy + _Grain_Params2.zw).rgb;
 
                 // Noisiness response curve based on scene luminance
                 float lum = 1.0 - sqrt(Luminance(saturate(color)));
@@ -206,6 +200,9 @@ Shader "Hidden/PostProcessing/Uber"
             #if COLOR_GRADING_HDR_3D
             {
 //Color 3D
+            color *= _PostExposure;
+            float3 colorLutSpace = saturate(LUT_SPACE_ENCODE(color.rgb));
+            color.rgb = ApplyLut3D(TEXTURE3D_PARAM(_Lut3D, sampler_Lut3D), colorLutSpace, _Lut3D_Params);
             }
             #elif COLOR_GRADING_HDR_2D
             {
@@ -224,7 +221,7 @@ Shader "Hidden/PostProcessing/Uber"
             }
             #endif
 
-            half4 output = color;
+            float4 output = color;
 
             #if FINALPASS
             {
@@ -243,7 +240,7 @@ Shader "Hidden/PostProcessing/Uber"
                 {
                     // Put saturated luma in alpha for FXAA - higher quality than "green as luma" and
                     // necessary as RGB values will potentially still be HDR for the FXAA pass
-                    half luma = Luminance(saturate(output));
+                    float luma = Luminance(saturate(output));
                     output.a = luma;
                 }
 
@@ -256,7 +253,7 @@ Shader "Hidden/PostProcessing/Uber"
             #endif
 
             // Output RGB is still HDR at that point (unless range was crunched by a tonemapper)
-            return output;*/
+            return output;
         }
 
     ENDHLSL

@@ -14,10 +14,9 @@ namespace MPipeline
         public Matrix4x4[] cascadeShadowMapVP = new Matrix4x4[4];
         public Vector4[] shadowFrustumVP = new Vector4[6];
 
-        protected override void Awake()
+        protected override void Init(PipelineResources resources)
         {
-            base.Awake();
-            shadMaskMaterial = new Material(Shader.Find("Hidden/ShadowMask"));
+            shadMaskMaterial = new Material(resources.shadowMaskShader);
             for (int i = 0; i < cascadeShadowMapVP.Length; ++i)
             {
                 cascadeShadowMapVP[i] = Matrix4x4.identity;
@@ -25,9 +24,8 @@ namespace MPipeline
         }
 
 
-        protected override void OnDestroy()
+        protected override void Dispose()
         {
-            base.OnDestroy();
             Destroy(shadMaskMaterial);
             if (volumetricTex) volumetricTex.Release();
             Destroy(volumetricTex);
@@ -40,7 +38,7 @@ namespace MPipeline
             int pass;
             if (SunLight.current.enableShadow)
             {
-                PipelineFunctions.DrawShadow(data.cam, ref data.constEntity, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
+                PipelineFunctions.DrawShadow(data.cam, data.resources.gpuFrustumCulling, ref data.arrayCollection, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
                 PipelineFunctions.UpdateShadowMaskState(shadMaskMaterial, ref SunLight.shadMap, cascadeShadowMapVP);
                 /*   CheckTex(data.cam);
                    Graphics.SetRenderTarget(volumetricTex);

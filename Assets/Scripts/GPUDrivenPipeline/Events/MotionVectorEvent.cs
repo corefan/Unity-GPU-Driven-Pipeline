@@ -8,16 +8,15 @@ namespace MPipeline
     {
         private Material motionVecMat;
         private Matrix4x4 lastVp;
-        protected override void Awake()
+        protected override void Init(PipelineResources resources)
         {
-            base.Awake();
+          
             lastVp = Matrix4x4.identity;
-            motionVecMat = new Material(Shader.Find("Hidden/MotionVector"));
+            motionVecMat = new Material(resources.motionVectorShader);
         }
 
-        protected override void OnDestroy()
+        protected override void Dispose()
         {
-            base.OnDestroy();
             Destroy(motionVecMat);
         }
 

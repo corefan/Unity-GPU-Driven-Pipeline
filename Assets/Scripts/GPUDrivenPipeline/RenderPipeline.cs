@@ -18,15 +18,14 @@ namespace MPipeline
             if (isConstInitialize)
                 return;
             isConstInitialize = true;
-            data.constEntity.arrayCollection = new RenderArray(true);
-            data.constEntity.gpuFrustumShader = Resources.Load<ComputeShader>("GpuFrustumCulling");
+            data.arrayCollection = new RenderArray(true);
         }
         //Initialized In Every Scene
         public void InitScene()
         {
             if (isInitialized) return;
             isInitialized = true;
-            PipelineFunctions.InitBaseBuffer(ref data.baseBuffer, "MapInfos", "MapPoints");
+            PipelineFunctions.InitBaseBuffer(ref data.baseBuffer);
         }
         public void DisposeScene()
         {
@@ -39,6 +38,9 @@ namespace MPipeline
         public static List<PipelineEvent> drawEvents = new List<PipelineEvent>();
         public static List<PipelineEvent> preRenderEvents = new List<PipelineEvent>();
         private List<RenderTexture> temporaryTextures = new List<RenderTexture>(10);
+        private PipelineEvent[] events;
+        public PipelineResources resources;
+        public GameObject eventParent;
         private void Awake()
         {
             if (singleton)
@@ -52,13 +54,21 @@ namespace MPipeline
             InitConst();
             InitScene();
             GC.Collect();
-            
+            events = eventParent.GetComponentsInChildren<PipelineEvent>();
+            foreach(var i in events)
+            {
+                i.InitEvent(resources);
+            }
         }
         private void OnDestroy()
         {
             if (singleton != this) return;
             singleton = null;
             DisposeScene();
+            foreach (var i in events)
+            {
+                i.DisposeEvent();
+            }
         }
 
         public void BeforePipeline(Camera cam)
@@ -78,8 +88,9 @@ namespace MPipeline
             GL.Clear(true, true, Color.black);
             //Set Global Data
             data.cam = cam;
+            data.resources = resources;
             PipelineFunctions.GetViewProjectMatrix(cam, out data.vp, out data.inverseVP);
-            ref RenderArray arr = ref data.constEntity.arrayCollection;
+            ref RenderArray arr = ref data.arrayCollection;
             PipelineFunctions.GetCullingPlanes(ref data.inverseVP, arr.frustumPlanes, arr.farFrustumCorner, arr.nearFrustumCorner);
             //Start Calling Events
             foreach (var i in drawEvents)

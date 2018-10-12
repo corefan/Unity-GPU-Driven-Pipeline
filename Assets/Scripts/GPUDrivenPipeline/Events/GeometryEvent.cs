@@ -12,32 +12,28 @@ namespace MPipeline
         #region HIZDEPTH
         public HizDepth hizDepth;
         #endregion
-        protected override void Awake()
+        protected override void Init(PipelineResources resources)
         {
-            base.Awake();
-            hizDepth.InitHiZ();
-        }
-        protected override void OnDestroy()
-        {
-            base.OnDestroy();
-            hizDepth.DisposeHiZ();
+            hizDepth.InitHiZ(resources);
         }
 
+        protected override void Dispose()
+        {
+            hizDepth.DisposeHiZ();
+        }
         public Material proceduralMaterial;
         public override void FrameUpdate(ref PipelineCommandData data)
         {
             int kernel = hizDepth.DrawHizDepth(ref data);
             ref var baseBuffer = ref data.baseBuffer;
-            ref var constEntity = ref data.constEntity;
+            var gpuFrustumShader = data.resources.gpuFrustumCulling;
             Graphics.SetRenderTarget(data.targets.geometryColorBuffer, data.targets.depthBuffer);
             Shader.SetGlobalMatrix(ShaderIDs._InvVP, data.inverseVP);
             PipelineFunctions.SetShaderBuffer(ref baseBuffer);
-            PipelineFunctions.SetBaseBuffer(ref baseBuffer, constEntity.gpuFrustumShader, constEntity.arrayCollection.frustumPlanes, kernel);
+            PipelineFunctions.SetBaseBuffer(ref baseBuffer, gpuFrustumShader, data.arrayCollection.frustumPlanes, kernel);
             if (kernel > 0)
-            {
-                PipelineFunctions.SetHizOccBuffer(ref data, hizDepth.depthMipTexture, constEntity.gpuFrustumShader, kernel);
-            }
-            PipelineFunctions.RunCullDispatching(ref baseBuffer, constEntity.gpuFrustumShader, kernel);
+                PipelineFunctions.SetHizOccBuffer(ref data, hizDepth.depthMipTexture, gpuFrustumShader, kernel);
+            PipelineFunctions.RunCullDispatching(ref baseBuffer, gpuFrustumShader, kernel, data.cam.orthographic);
             PipelineFunctions.RenderProceduralCommand(ref baseBuffer, proceduralMaterial);
         }
         public override void PreRenderFrame(Camera cam)
@@ -62,14 +58,14 @@ namespace MPipeline
         public Transform[] occluderTransforms;
         public Mesh cube;
 
-        public void InitHiZ()
+        public void InitHiZ(PipelineResources resources)
         {
             if (occluderTransforms.Length == 0)
             {
                 enableHiz = false;
                 return;
             }
-            cullingShader = Resources.Load<ComputeShader>("OccluderCulling");
+            cullingShader = resources.occluderCulling;
             allCubeBuffer = new ComputeBuffer(occluderTransforms.Length, Matrix3x4.SIZE);
             resultBuffer = new ComputeBuffer(occluderTransforms.Length, Matrix3x4.SIZE);
             instanceCountBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
@@ -84,8 +80,8 @@ namespace MPipeline
             depthMipTexture.filterMode = FilterMode.Point;
             depthMipTexture.wrapMode = TextureWrapMode.Clamp;
             backupMip.filterMode = FilterMode.Point;
-            getLodMat = new Material(Shader.Find("Hidden/GetLOD"));
-            mat = new Material(Shader.Find("Unlit/IndirectDepth"));
+            getLodMat = new Material(resources.HizLodShader);
+            mat = new Material(resources.indirectDepthShader);
             int[] triangle = cube.triangles;
             Vector3[] vertices = cube.vertices;
             NativeArray<Vector4> vecs = new NativeArray<Vector4>(triangle.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -104,7 +100,7 @@ namespace MPipeline
             vecs.Dispose();
             allInfos.Dispose();
         }
-        private void ExecuteComputeShader(Vector4[] frustumPlanes)
+        private void ExecuteComputeShader(Vector4[] frustumPlanes, bool isOrtho)
         {
             cullingShader.SetBuffer(0, ShaderIDs.allCubeBuffer, allCubeBuffer);
             cullingShader.SetBuffer(0, ShaderIDs.instanceCountBuffer, instanceCountBuffer);
@@ -112,6 +108,7 @@ namespace MPipeline
             cullingShader.SetBuffer(0, ShaderIDs.resultBuffer, resultBuffer);
             cullingShader.SetVectorArray(ShaderIDs.planes, frustumPlanes);
             cullingShader.Dispatch(1, 1, 1, 1);
+            cullingShader.SetInt(ShaderIDs._CullingPlaneCount, isOrtho ? 6 : 5);
             ComputeShaderUtility.Dispatch(cullingShader, 0, allCubeBuffer.count, 64);
         }
         private void DrawOccluder(ref PipelineCommandData data)
@@ -162,7 +159,7 @@ namespace MPipeline
         public int DrawHizDepth(ref PipelineCommandData data)
         {
             if (!enableHiz) return PipelineBaseBuffer.ComputeShaderKernels.ClusterCullKernel;
-            ExecuteComputeShader(data.constEntity.arrayCollection.frustumPlanes);
+            ExecuteComputeShader(data.arrayCollection.frustumPlanes, data.cam.orthographic);
             DrawOccluder(ref data);
             GetMipMap();
             return PipelineBaseBuffer.ComputeShaderKernels.ClusterCullOccKernel;

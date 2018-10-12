@@ -9,14 +9,15 @@ namespace MPipeline
 {
     public struct ColorGradingData
     {
-        public ComputeShader lutShader;
         public int kernel;
         public Texture2D m_GradingCurves;
         public Color[] m_Pixels;
         public RenderTexture m_InternalLogLut;
         public ColorGradingSetting settings;
+        public bool enabledInUber;
     }
-    public static class ColorGrading
+
+    public static class ColorGradingFunction
     {
         #region STATIC_CONST_FIELD
         static readonly int _Output = Shader.PropertyToID("_Output");
@@ -34,21 +35,21 @@ namespace MPipeline
         #endregion
         const int k_Lut3DSize = 33;
         public const int k_Precision = 128;
-        public static void InitializeColorGrading(ColorGradingSetting settings, ComputeShader shader, ref ColorGradingData data)
+        public static void InitializeColorGrading(ColorGradingSetting settings, ref ColorGradingData data, ComputeShader lut3dShader)
         {
             data.settings = settings;
+            data.enabledInUber = false;
             data.m_Pixels = new Color[k_Precision * 2];
             data.m_InternalLogLut = null;
             data.m_GradingCurves = null;
-            data.lutShader = shader;
-            data.kernel = data.lutShader.FindKernel("KGenLut3D_AcesTonemap");
             data.settings.hueVsHueCurve.value.Cache(Time.renderedFrameCount);
             data.settings.hueVsSatCurve.value.Cache(Time.renderedFrameCount);
             data.settings.satVsSatCurve.value.Cache(Time.renderedFrameCount);
             data.settings.lumVsSatCurve.value.Cache(Time.renderedFrameCount);
+            data.kernel = lut3dShader.FindKernel("KGenLut3D_AcesTonemap");
         }
         public static void Finalize(ref ColorGradingData data, Material uberMaterial)
-        { 
+        {
             if (data.m_InternalLogLut)
             {
                 data.m_InternalLogLut.Release();
@@ -56,18 +57,30 @@ namespace MPipeline
             }
             if (data.m_GradingCurves)
                 UnityEngine.Object.Destroy(data.m_GradingCurves);
-            uberMaterial.DisableKeyword("COLOR_GRADING_HDR_3D");
         }
-        public static void PrepareRender(ref ColorGradingData data, Material uberMaterial)
+        public static void PrepareRender(ref ColorGradingData data, ref PostSharedData sharedData)
         {
+            Material uberMaterial = sharedData.uberMaterial;
+            if (data.settings.active != data.enabledInUber)
+            {
+                data.enabledInUber = data.settings.active;
+                sharedData.keywordsTransformed = true;
+                if (data.enabledInUber)
+                {
+                    sharedData.shaderKeywords.Add("COLOR_GRADING_HDR_3D");
+                }
+                else
+                {
+                    sharedData.shaderKeywords.Remove("COLOR_GRADING_HDR_3D");
+                }
+            }
             if (!data.settings.enabled)
             {
-                uberMaterial.DisableKeyword("COLOR_GRADING_HDR_3D");
                 return;
             }
             CheckInternalLogLut(ref data.m_InternalLogLut);
             // Lut setup
-            var compute = data.lutShader;
+            var compute = sharedData.resources.computeShaders.lut3DBaker;
             var kernel = data.kernel;
             var settings = data.settings;
             compute.SetTexture(data.kernel, _Output, data.m_InternalLogLut);
@@ -100,7 +113,6 @@ namespace MPipeline
             int groupSize = Mathf.CeilToInt(k_Lut3DSize / 4f);
             compute.Dispatch(kernel, groupSize, groupSize, groupSize);
             var lut = data.m_InternalLogLut;
-            uberMaterial.EnableKeyword("COLOR_GRADING_HDR_3D");
             uberMaterial.SetTexture(ShaderIDs._Lut3D, lut);
             uberMaterial.SetVector(ShaderIDs._Lut3D_Params, new Vector2(1f / lut.width, lut.width - 1f));
             uberMaterial.SetFloat(ShaderIDs._PostExposure, Mathf.Exp(settings.postExposure * 0.69314718055994530941723212145818f));
