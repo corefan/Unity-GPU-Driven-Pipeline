@@ -40,7 +40,6 @@ namespace MPipeline
                 taaMat.SetFloat(ShaderIDs._Sharpness, sharpness);
                 taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification, 0f));
                 taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
-                taaMat.SetTexture(ShaderIDs._CameraMotionVectorsTexture, data.targets.motionVectorTexture);
                 taaMat.Blit(source, dest, 0);
                 Graphics.Blit(dest, historyTex);
             };

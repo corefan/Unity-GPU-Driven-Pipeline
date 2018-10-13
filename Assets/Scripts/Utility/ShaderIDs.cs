@@ -33,7 +33,6 @@ public static partial class ShaderIDs
     public static readonly int _Sharpness = Shader.PropertyToID("_Sharpness");
     public static readonly int _FinalBlendParameters = Shader.PropertyToID("_FinalBlendParameters");
     public static readonly int _HistoryTex = Shader.PropertyToID("_HistoryTex");
-    public static readonly int _CameraMotionVectorsTexture = Shader.PropertyToID("_CameraMotionVectorsTexture");
     public static readonly int _CullingPlaneCount = Shader.PropertyToID("_CullingPlaneCount");
 
     public static readonly int _ShadowMapResolution = Shader.PropertyToID("_ShadowMapResolution");
@@ -46,6 +45,7 @@ public static partial class ShaderIDs
     public static readonly int _HizDepthTex = Shader.PropertyToID("_HizDepthTex");
     public static readonly int _CameraUpVector = Shader.PropertyToID("_CameraUpVector");
     public static readonly int _VP = Shader.PropertyToID("_VP");
+    public static readonly int _NonJitterVP = Shader.PropertyToID("_NonJitterVP");
 
     public static readonly int _Lut3D = Shader.PropertyToID("_Lut3D");
     public static readonly int _Lut3D_Params = Shader.PropertyToID("_Lut3D_Params");

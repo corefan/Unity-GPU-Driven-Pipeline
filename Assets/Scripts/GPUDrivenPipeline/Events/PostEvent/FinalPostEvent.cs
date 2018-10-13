@@ -48,13 +48,14 @@ namespace MPipeline
         {
             Destroy(sharedData.uberMaterial);
             finalizerAction();
-            finalizerAction = null;
         }
 
         public override void FrameUpdate(ref PipelineCommandData data)
         {
+            sharedData.autoExposureTexture = RuntimeUtilities.whiteTexture;
             sharedData.source = data.targets.renderTarget;
             sharedData.screenSize = new Vector2Int(data.cam.pixelWidth, data.cam.pixelHeight);
+            sharedData.uberMaterial.SetTexture(PostProcessing.ShaderIDs.AutoExposureTex, sharedData.autoExposureTexture);
             renderAction();
             if (sharedData.keywordsTransformed)
             {

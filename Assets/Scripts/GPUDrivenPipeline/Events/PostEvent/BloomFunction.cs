@@ -180,7 +180,6 @@ namespace MPipeline
             uberMaterial.SetColor(PPSShaderIDs.Bloom_Color, linearColor);
             uberMaterial.SetTexture(PPSShaderIDs.Bloom_DirtTex, dirtTexture);
             Shader.SetGlobalTexture(PPSShaderIDs.BloomTex, lastUp);
-            context.bloomBufferNameID = lastUp;
         }
     }
 }

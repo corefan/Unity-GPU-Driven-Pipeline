@@ -12,7 +12,6 @@ namespace MPipeline
         public PostProcessResources resources;
         public Texture autoExposureTexture;
         public RenderTexture source;
-        public RenderTexture bloomBufferNameID;
         public List<RenderTexture> temporalRT;
         public List<string> shaderKeywords;
         public bool keywordsTransformed;

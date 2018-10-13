@@ -33,7 +33,6 @@ namespace MPipeline.Light
         const float angleToReg = (float)(3.1415926536 / 360.0);
         public override void FrameUpdate(ref PipelineCommandData data)
         {
-            spotLightMaterial.SetMatrix(ShaderIDs._InvVP, data.inverseVP);
             Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
             foreach (var i in mSpotlights)
             {

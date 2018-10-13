@@ -9,9 +9,8 @@ namespace MPipeline
     [PipelineEvent(false, true)]
     public unsafe class GeometryEvent : PipelineEvent
     {
-        #region HIZDEPTH
         public HizDepth hizDepth;
-        #endregion
+
         protected override void Init(PipelineResources resources)
         {
             hizDepth.InitHiZ(resources);
@@ -24,11 +23,13 @@ namespace MPipeline
         public Material proceduralMaterial;
         public override void FrameUpdate(ref PipelineCommandData data)
         {
+            //HiZ Occlusion
             int kernel = hizDepth.DrawHizDepth(ref data);
             ref var baseBuffer = ref data.baseBuffer;
             var gpuFrustumShader = data.resources.gpuFrustumCulling;
+            
             Graphics.SetRenderTarget(data.targets.geometryColorBuffer, data.targets.depthBuffer);
-            Shader.SetGlobalMatrix(ShaderIDs._InvVP, data.inverseVP);
+
             PipelineFunctions.SetShaderBuffer(ref baseBuffer);
             PipelineFunctions.SetBaseBuffer(ref baseBuffer, gpuFrustumShader, data.arrayCollection.frustumPlanes, kernel);
             if (kernel > 0)
@@ -56,7 +57,6 @@ namespace MPipeline
         public RenderTexture depthMipTexture;
         public bool enableHiz;
         public Transform[] occluderTransforms;
-        public Mesh cube;
 
         public void InitHiZ(PipelineResources resources)
         {
@@ -75,6 +75,7 @@ namespace MPipeline
             backupMip = new RenderTexture(depthRes, depthRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
             backupMip.useMipMap = true;
             backupMip.autoGenerateMips = false;
+            Mesh occluderMesh = resources.occluderMesh;
             depthMipTexture.useMipMap = true;
             depthMipTexture.autoGenerateMips = false;
             depthMipTexture.filterMode = FilterMode.Point;
@@ -82,8 +83,8 @@ namespace MPipeline
             backupMip.filterMode = FilterMode.Point;
             getLodMat = new Material(resources.HizLodShader);
             mat = new Material(resources.indirectDepthShader);
-            int[] triangle = cube.triangles;
-            Vector3[] vertices = cube.vertices;
+            int[] triangle = occluderMesh.triangles;
+            Vector3[] vertices = occluderMesh.vertices;
             NativeArray<Vector4> vecs = new NativeArray<Vector4>(triangle.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
             for (int i = 0; i < triangle.Length; ++i)
             {

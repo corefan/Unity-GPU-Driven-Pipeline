@@ -345,6 +345,7 @@ public unsafe static class PipelineFunctions
         tar.gbufferTextures[1] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, collectRT);
         tar.gbufferTextures[2] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBFloat, collectRT);
         tar.gbufferTextures[3] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 24, RenderTextureFormat.ARGBHalf, collectRT);
+        tar.gbufferTextures[4] = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.RGFloat, collectRT);
         for (int i = 0; i < tar.gbufferTextures.Length; ++i)
         {
             tar.gbufferTextures[i].filterMode = FilterMode.Point;
@@ -353,7 +354,6 @@ public unsafe static class PipelineFunctions
         }
         tar.renderTarget = tar.gbufferTextures[3];
         tar.backupTarget = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, collectRT);
-        tar.motionVectorTexture = GetTemporary(tarcam.pixelWidth, tarcam.pixelHeight, 0, RenderTextureFormat.RGFloat, collectRT);
         tar.colorBuffer = tar.renderTarget.colorBuffer;
         tar.depthBuffer = tar.renderTarget.depthBuffer;
     }

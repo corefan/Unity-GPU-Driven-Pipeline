@@ -11,8 +11,8 @@ namespace MPipeline
         private RenderTexture volumetricTex;
         public ComputeShader shader;
         private static int[] _Count = new int[2];
-        public Matrix4x4[] cascadeShadowMapVP = new Matrix4x4[4];
-        public Vector4[] shadowFrustumVP = new Vector4[6];
+        private Matrix4x4[] cascadeShadowMapVP = new Matrix4x4[4];
+        private Vector4[] shadowFrustumVP = new Vector4[6];
 
         protected override void Init(PipelineResources resources)
         {

@@ -53,22 +53,35 @@ namespace MPipeline
             data.targets = RenderTargets.Init();
             InitConst();
             InitScene();
-            GC.Collect();
+            LoadAllEvents();
+        }
+
+        public void LoadAllEvents()
+        {
             events = eventParent.GetComponentsInChildren<PipelineEvent>();
-            foreach(var i in events)
+            foreach (var i in events)
             {
                 i.InitEvent(resources);
             }
         }
+
+        public void DisposeAllEvents()
+        {
+            foreach (var i in events)
+            {
+                i.DisposeEvent();
+            }
+            events = null;
+            drawEvents.Clear();
+            preRenderEvents.Clear();
+        }
+
         private void OnDestroy()
         {
             if (singleton != this) return;
             singleton = null;
             DisposeScene();
-            foreach (var i in events)
-            {
-                i.DisposeEvent();
-            }
+            DisposeAllEvents();
         }
 
         public void BeforePipeline(Camera cam)

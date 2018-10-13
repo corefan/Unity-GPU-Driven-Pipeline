@@ -499,9 +499,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1657096687}
+  - component: {fileID: 1657096686}
   - component: {fileID: 1657096688}
   - component: {fileID: 1657096689}
-  - component: {fileID: 1657096691}
   - component: {fileID: 1657096690}
   - component: {fileID: 1657096692}
   - component: {fileID: 1657096693}
@@ -512,6 +512,21 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &1657096686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1657096685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06ff345ce266e1e4b970e9ac61d5591d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_enabledInPipeline: 1
+  m_enableBeforePipeline: 0
+  layer: 0
 --- !u!4 &1657096687
 Transform:
   m_ObjectHideFlags: 0
@@ -542,10 +557,9 @@ MonoBehaviour:
   m_enableBeforePipeline: 0
   layer: 2000
   hizDepth:
-    enableHiz: 1
+    enableHiz: 0
     occluderTransforms:
     - {fileID: 2000166148}
-    cube: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
   proceduralMaterial: {fileID: 2100000, guid: f8c3854a77b86184f8afd2b9b09a2eba, type: 2}
 --- !u!114 &1657096689
 MonoBehaviour:
@@ -563,78 +577,6 @@ MonoBehaviour:
   m_enableBeforePipeline: 0
   layer: 2050
   shader: {fileID: 7200000, guid: be4e5ea3c383b0f4bb8190e40fa77d0a, type: 3}
-  cascadeShadowMapVP:
-  - e00: 0
-    e01: 0
-    e02: 0
-    e03: 0
-    e10: 0
-    e11: 0
-    e12: 0
-    e13: 0
-    e20: 0
-    e21: 0
-    e22: 0
-    e23: 0
-    e30: 0
-    e31: 0
-    e32: 0
-    e33: 0
-  - e00: 0
-    e01: 0
-    e02: 0
-    e03: 0
-    e10: 0
-    e11: 0
-    e12: 0
-    e13: 0
-    e20: 0
-    e21: 0
-    e22: 0
-    e23: 0
-    e30: 0
-    e31: 0
-    e32: 0
-    e33: 0
-  - e00: 0
-    e01: 0
-    e02: 0
-    e03: 0
-    e10: 0
-    e11: 0
-    e12: 0
-    e13: 0
-    e20: 0
-    e21: 0
-    e22: 0
-    e23: 0
-    e30: 0
-    e31: 0
-    e32: 0
-    e33: 0
-  - e00: 0
-    e01: 0
-    e02: 0
-    e03: 0
-    e10: 0
-    e11: 0
-    e12: 0
-    e13: 0
-    e20: 0
-    e21: 0
-    e22: 0
-    e23: 0
-    e30: 0
-    e31: 0
-    e32: 0
-    e33: 0
-  shadowFrustumVP:
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
-  - {x: 0, y: 0, z: 0, w: 0}
 --- !u!114 &1657096690
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -651,21 +593,6 @@ MonoBehaviour:
   m_enableBeforePipeline: 0
   layer: 2500
   skyboxMaterial: {fileID: 2100000, guid: 87bd98501acd9484197588ce7afd4d19, type: 2}
---- !u!114 &1657096691
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1657096685}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f06384a09b7e29a4a9db3c15b940ec64, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_enabledInPipeline: 1
-  m_enableBeforePipeline: 0
-  layer: 2100
 --- !u!114 &1657096692
 MonoBehaviour:
   m_ObjectHideFlags: 0

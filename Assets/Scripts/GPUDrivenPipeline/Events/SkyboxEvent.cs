@@ -19,7 +19,6 @@ namespace MPipeline
         public override void FrameUpdate(ref PipelineCommandData data)
         {
             Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
-            skyboxMaterial.SetVectorArray(ShaderIDs._FarClipCorner, data.arrayCollection.farFrustumCorner);
             skyboxMaterial.SetPass(0);
             Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
         }
