@@ -11,7 +11,6 @@ namespace MPipeline
         public Vector2Int screenSize;
         public PostProcessResources resources;
         public Texture autoExposureTexture;
-        public RenderTexture source;
         public List<RenderTexture> temporalRT;
         public List<string> shaderKeywords;
         public bool keywordsTransformed;
@@ -41,6 +40,13 @@ namespace MPipeline
         public static void BlitFullScreen(RenderTexture source, RenderTexture dest, Material mat, int pass)
         {
             mat.SetTexture(ShaderIDs._MainTex, source);
+            mat.SetPass(pass);
+            Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
+        }
+
+
+        public static void BlitFullScreen(RenderTexture dest, Material mat, int pass)
+        {
             mat.SetPass(pass);
             Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
         }

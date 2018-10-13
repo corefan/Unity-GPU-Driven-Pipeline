@@ -293,20 +293,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 14e25129dba4f9f4a8fdf690a9e8d118, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1111116810
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1111116808}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b8eb9fca4b81414b949a9baf9820052, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  resources: {fileID: 11400000, guid: 50b544c2017a17d4ca53c689c3b49d03, type: 2}
-  eventParent: {fileID: 1657096685}
 --- !u!1 &1379567076
 GameObject:
   m_ObjectHideFlags: 0
@@ -365,7 +351,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1391845212}
   - component: {fileID: 1391845211}
-  - component: {fileID: 1391845214}
   - component: {fileID: 1391845213}
   m_Layer: 0
   m_Name: Directional Light
@@ -385,7 +370,7 @@ Light:
   serializedVersion: 8
   m_Type: 1
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
-  m_Intensity: 0.2
+  m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
   m_CookieSize: 10
@@ -448,48 +433,6 @@ MonoBehaviour:
     bias: {x: 0.05, y: 0.12, z: 0.15, w: 0.2}
     normalBias: {x: 0.01, y: 0.0105, z: 0.011, w: 0.012}
     cascadeSoftValue: {x: 5, y: 3, z: 2, w: 1.5}
---- !u!20 &1391845214
-Camera:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1391845210}
-  m_Enabled: 0
-  serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 1
-  m_SensorSize: {x: 36, y: 24}
-  m_LensShift: {x: 0, y: 0}
-  m_GateFitMode: 2
-  m_FocalLength: 50
-  m_NormalizedViewPortRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
-  near clip plane: 0.3
-  far clip plane: 30
-  field of view: 60
-  orthographic: 0
-  orthographic size: 5
-  m_Depth: 0
-  m_CullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_RenderingPath: 1
-  m_TargetTexture: {fileID: 0}
-  m_TargetDisplay: 0
-  m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 0
-  m_AllowDynamicResolution: 0
-  m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
-  m_StereoConvergence: 10
-  m_StereoSeparation: 0.022
 --- !u!1 &1657096685
 GameObject:
   m_ObjectHideFlags: 0
@@ -499,12 +442,13 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1657096687}
+  - component: {fileID: 1657096691}
   - component: {fileID: 1657096686}
   - component: {fileID: 1657096688}
   - component: {fileID: 1657096689}
   - component: {fileID: 1657096690}
-  - component: {fileID: 1657096692}
   - component: {fileID: 1657096693}
+  - component: {fileID: 1657096692}
   m_Layer: 0
   m_Name: PipelineSettings
   m_TagString: Untagged
@@ -593,6 +537,20 @@ MonoBehaviour:
   m_enableBeforePipeline: 0
   layer: 2500
   skyboxMaterial: {fileID: 2100000, guid: 87bd98501acd9484197588ce7afd4d19, type: 2}
+--- !u!114 &1657096691
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1657096685}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b8eb9fca4b81414b949a9baf9820052, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  resources: {fileID: 11400000, guid: 50b544c2017a17d4ca53c689c3b49d03, type: 2}
+  eventParent: {fileID: 1657096685}
 --- !u!114 &1657096692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -607,11 +565,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
   m_enableBeforePipeline: 1
-  layer: 2600
-  jitterSpread: 0.75
+  layer: 3000
+  jitterSpread: 1
   sharpness: 0.25
   stationaryBlending: 0.95
-  motionBlending: 0.85
+  motionBlending: 0.9
+  stationaryAABBScale: 1.35
+  motionAABBScale: 0.5
 --- !u!114 &1657096693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -624,9 +584,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d237876de09eba543825aad2b835200b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_enabledInPipeline: 1
+  m_enabledInPipeline: 0
   m_enableBeforePipeline: 0
-  layer: 3000
+  layer: 2600
   profile: {fileID: 11400000, guid: 6d0d1a1ad21c9604896988c0fd15fc68, type: 2}
   resources: {fileID: 11400000, guid: d82512f9c8e5d4a4d938b575d47f88d4, type: 2}
 --- !u!1 &2000166144

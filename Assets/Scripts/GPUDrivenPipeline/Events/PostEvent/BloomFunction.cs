@@ -57,7 +57,7 @@ namespace MPipeline
             Object.Destroy(data.bloomMaterial);
         }
 
-        public static void Render(ref BloomData data, ref PostSharedData context)
+        public static void Render(ref BloomData data, ref PostSharedData context, RenderTexture source)
         {
             if (data.isFastMode != data.settings.fastMode || data.settings.active != data.enabledInUber)
             {
@@ -105,7 +105,7 @@ namespace MPipeline
             int qualityOffset = settings.fastMode ? 1 : 0;
 
             // Downsample
-            RenderTexture lastDown = context.source;
+            RenderTexture lastDown = source;
             for (int i = 0; i < iterations; i++)
             {
                 ref RenderTexture mipDown = ref data.m_Pyramid[i].down;
@@ -114,8 +114,8 @@ namespace MPipeline
                     ? (int)Pass.Prefilter13 + qualityOffset
                     : (int)Pass.Downsample13 + qualityOffset;
 
-                mipDown = PipelineFunctions.GetTemporary(tw, th, 0, context.source.format, RenderTextureReadWrite.Default, FilterMode.Bilinear, context.temporalRT);
-                mipUp = PipelineFunctions.GetTemporary(tw, th, 0, context.source.format, RenderTextureReadWrite.Default, FilterMode.Bilinear, context.temporalRT);
+                mipDown = PipelineFunctions.GetTemporary(tw, th, 0, source.format, RenderTextureReadWrite.Default, FilterMode.Bilinear, context.temporalRT);
+                mipUp = PipelineFunctions.GetTemporary(tw, th, 0, source.format, RenderTextureReadWrite.Default, FilterMode.Bilinear, context.temporalRT);
                 PostFunctions.BlitFullScreen(lastDown, mipDown, bloomMaterial, pass);
                 lastDown = mipDown;
                 tw /= 2;

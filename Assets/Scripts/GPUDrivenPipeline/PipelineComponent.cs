@@ -6,10 +6,10 @@ using Unity.Collections;
 
 public struct PipelineBaseBuffer
 {
-    public ComputeBuffer clusterBuffer;    //ObjectInfo
-    public ComputeBuffer instanceCountBuffer; //uint4
-    public ComputeBuffer resultBuffer; //uint
-    public ComputeBuffer verticesBuffer;    //Point
+    public ComputeBuffer clusterBuffer;         //ObjectInfo
+    public ComputeBuffer instanceCountBuffer;   //uint
+    public ComputeBuffer resultBuffer;          //uint
+    public ComputeBuffer verticesBuffer;        //Point
     public int clusterCount;
     public const int INDIRECTSIZE = 20;
     public const int UINTSIZE = 4;

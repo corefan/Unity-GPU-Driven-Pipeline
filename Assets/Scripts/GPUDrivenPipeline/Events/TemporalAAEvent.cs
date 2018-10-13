@@ -21,7 +21,13 @@ namespace MPipeline
 
         [Tooltip("The blend coefficient for a fragment with significant motion. Controls the percentage of history sample blended into the final color.")]
         [Range(0f, 0.99f)]
-        public float motionBlending = 0.85f;
+        public float motionBlending = 0.9f;
+        [Tooltip("Screen Space AABB Bounding for stationary state(Larger will take less flask but more ghost)")]
+        [Range(0.05f, 3f)]
+        public float stationaryAABBScale = 1.25f;
+        [Tooltip("Screen Space AABB Bounding for motion state(Larger will take less flask but more ghost)")]
+        [Range(0.05f, 3f)]
+        public float motionAABBScale = 0.5f;
         private Vector2 jitter;
         private int sampleIndex = 0;
         private const int k_SampleCount = 8;
@@ -35,10 +41,12 @@ namespace MPipeline
             {
                 SetHistory(data.cam, data.targets.renderTarget);
                 //TAA Start
-                const float kMotionAmplification = 100f * 60f;
+                const float kMotionAmplification_Blending = 100f * 60f;
+                const float kMotionAmplification_Bounding = 100f * 30f;
                 taaMat.SetVector(ShaderIDs._Jitter, jitter);
                 taaMat.SetFloat(ShaderIDs._Sharpness, sharpness);
-                taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification, 0f));
+                taaMat.SetVector(ShaderIDs._TemporalClipBounding, new Vector4(stationaryAABBScale, motionAABBScale, kMotionAmplification_Bounding, 0f));
+                taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification_Blending, 0f));
                 taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
                 taaMat.Blit(source, dest, 0);
                 Graphics.Blit(dest, historyTex);
@@ -106,6 +114,7 @@ namespace MPipeline
                 historyTex.Release();
                 Destroy(historyTex);
                 historyTex = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+                historyTex.filterMode = FilterMode.Bilinear;
                 Graphics.Blit(renderTarget, historyTex);
             }
         }

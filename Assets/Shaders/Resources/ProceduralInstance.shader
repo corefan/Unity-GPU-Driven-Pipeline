@@ -117,7 +117,7 @@ float4 ProceduralStandardSpecular_Deferred (SurfaceOutputStandardSpecular s, flo
 }
 float4x4 _LastVp;
 float4x4 _NonJitterVP;
-float2 CalculateMotionVector(float4x4 lastvp, float3 worldPos, float2 screenUV)
+inline float2 CalculateMotionVector(float4x4 lastvp, float3 worldPos, float2 screenUV)
 {
 	float4 lastScreenPos = mul(lastvp, float4(worldPos, 1));
 	float2 lastScreenUV = GetScreenPos(lastScreenPos);
