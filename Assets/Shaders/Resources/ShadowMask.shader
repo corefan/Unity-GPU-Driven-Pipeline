@@ -5,12 +5,14 @@
 
 CGINCLUDE
 #pragma target 5.0
+#define _CameraDepthTexture __
 #include "UnityCG.cginc"
 #include "UnityDeferredLibrary.cginc"
 #include "UnityPBSLighting.cginc"
 #include "UnityStandardUtils.cginc"
 #include "UnityGBuffer.cginc"
 #include "UnityStandardBRDF.cginc"
+#undef _CameraDepthTexture
 
 			struct appdata
 			{
@@ -111,6 +113,7 @@ static const float2 DirPoissonDisks[64] =
 			Texture2D<float4> _CameraGBufferTexture0; SamplerState sampler_CameraGBufferTexture0;
 			Texture2D<float4> _CameraGBufferTexture1; SamplerState sampler_CameraGBufferTexture1;
 			Texture2D<float4> _CameraGBufferTexture2; SamplerState sampler_CameraGBufferTexture2;
+			Texture2D<float> _CameraDepthTexture; SamplerState sampler_CameraDepthTexture;
 			float3 _LightFinalColor;
 			#define RANDOM(seed) cos(sin(seed * float2(54.135764, 77.468761) + float2(631.543147, 57.4687)) * float2(657.387478, 86.1653) + float2(65.15686, 15.3574563))
 			float GetShadow(inout float4 worldPos, float depth, float2 screenUV)
@@ -182,7 +185,7 @@ ENDCG
 				half4 gbuffer0 = _CameraGBufferTexture0.Sample(sampler_CameraGBufferTexture0, i.uv);
     			half4 gbuffer1 = _CameraGBufferTexture1.Sample(sampler_CameraGBufferTexture1, i.uv);
     			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
-				float depth = gbuffer2.w;
+				float depth = _CameraDepthTexture.Sample(sampler_CameraDepthTexture, i.uv);
 				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
 				float atten = GetShadow(wpos, depth, i.uv);
 				UnityStandardData data = UnityStandardDataFromGbuffer(gbuffer0, gbuffer1, gbuffer2);
@@ -213,7 +216,7 @@ ENDCG
 				half4 gbuffer0 = _CameraGBufferTexture0.Sample(sampler_CameraGBufferTexture0, i.uv);
     			half4 gbuffer1 = _CameraGBufferTexture1.Sample(sampler_CameraGBufferTexture1, i.uv);
     			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
-				float depth = gbuffer2.w;
+				float depth = _CameraDepthTexture.Sample(sampler_CameraDepthTexture, i.uv);
 				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
 				UnityStandardData data = UnityStandardDataFromGbuffer(gbuffer0, gbuffer1, gbuffer2);
 				float3 eyeVec = normalize(wpos.xyz - _WorldSpaceCameraPos);
@@ -240,7 +243,7 @@ ENDCG
 			float4 frag (v2f i) : SV_Target
 			{
     			half4 gbuffer2 = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.uv);
-				float depth = gbuffer2.w;
+				float depth = _CameraDepthTexture.Sample(sampler_CameraDepthTexture, i.uv);
 				float4 wpos = mul(_InvVP, float4(i.uv * 2 - 1, depth, 1));
 				wpos /= wpos.w;
 				const float step = 1.0 / 512.0;

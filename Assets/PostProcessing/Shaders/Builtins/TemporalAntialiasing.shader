@@ -21,8 +21,8 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
 
         TEXTURE2D_SAMPLER2D(_HistoryTex, sampler_HistoryTex);
 
-        TEXTURE2D_SAMPLER2D(_CameraGBufferTexture2, sampler_CameraGBufferTexture2);
-        float4 _CameraGBufferTexture2_TexelSize;
+        TEXTURE2D_SAMPLER2D(_CameraDepthTexture, sampler_CameraDepthTexture);
+        float4 _CameraDepthTexture_TexelSize;
         float3 _TemporalClipBounding;
         TEXTURE2D_SAMPLER2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture);
 
@@ -142,20 +142,20 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
         {
             return rcp(Luma4(Color) * Exposure + 4);
         }
-#define SAMPLE_GBUFFER_OFFSET(x,y,z,a) (x.Sample(y,z,a).w)
+#define SAMPLE_GBUFFER_OFFSET(x,y,z,a) (x.Sample(y,z,a).r)
         half2 ReprojectedMotionVectorUV(half2 uv)
         {
-            const float2 k = _CameraGBufferTexture2_TexelSize.xy;
+            const float2 k = _CameraDepthTexture_TexelSize.xy;
             half neighborhood[9];
-            neighborhood[0] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(-1, -1));
-            neighborhood[1] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(0, -1));
-            neighborhood[2] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(1, -1));
-            neighborhood[3] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(-1, 0));
-            neighborhood[4] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(0, 0));
-            neighborhood[5] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(1, 0));
-            neighborhood[6] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(-1, 1));
-            neighborhood[7] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(0, -1));
-            neighborhood[8] = SAMPLE_GBUFFER_OFFSET(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv, int2(1, 1));
+            neighborhood[0] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, -1));
+            neighborhood[1] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
+            neighborhood[2] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, -1));
+            neighborhood[3] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 0));
+            neighborhood[4] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, 0));
+            neighborhood[5] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 0));
+            neighborhood[6] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 1));
+            neighborhood[7] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
+            neighborhood[8] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 1));
 
         #if defined(UNITY_REVERSED_Z)
             #define COMPARE_DEPTH(a, b) step(b, a)
@@ -163,7 +163,7 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
             #define COMPARE_DEPTH(a, b) step(a, b)
         #endif
 
-            half3 result = half3(0, 0, SAMPLE_GBUFFER_TEXTURE(_CameraGBufferTexture2, sampler_CameraGBufferTexture2, uv));
+            half3 result = half3(0, 0, SAMPLE_GBUFFER_TEXTURE(_CameraDepthTexture, sampler_CameraDepthTexture, uv));
 
             result = lerp(result, half3(-1, -1, neighborhood[0]), COMPARE_DEPTH(neighborhood[0], result.z));
             result = lerp(result, half3(0, -1, neighborhood[1]), COMPARE_DEPTH(neighborhood[1], result.z));

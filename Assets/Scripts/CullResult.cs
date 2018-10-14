@@ -34,6 +34,7 @@ namespace MPipeline
             frustumPlanes[5] = new Plane(farLeftButtom, farRightButtom, farRightTop);
         }
         #endregion
+        /*
         public NativeArray<DrawingPolicy> policy;
         public int policyLength;
         public NativeArray<BinarySort> sorts;
@@ -58,58 +59,59 @@ namespace MPipeline
             sortJob = sort.Schedule(sorts.Length, 1, objectCullingJob);
             JobHandle.ScheduleBatchedJobs();
             return true;
-        }
+        }*/
     }
+    /*
+  public unsafe struct ObjectCullJob : IJobParallelFor
+  {
+      private static bool PlaneTest(ref Matrix4x4 ObjectToWorld, ref Vector3 extent, out Vector3 position, Plane* frustumPlanes)
+      {
+          Vector3 right = new Vector3(ObjectToWorld.m00, ObjectToWorld.m10, ObjectToWorld.m20);
+          Vector3 up = new Vector3(ObjectToWorld.m01, ObjectToWorld.m11, ObjectToWorld.m21);
+          Vector3 forward = new Vector3(ObjectToWorld.m02, ObjectToWorld.m12, ObjectToWorld.m22);
+          position = new Vector3(ObjectToWorld.m03, ObjectToWorld.m13, ObjectToWorld.m23);
+          for (int i = 0; i < 6; ++i)
+          {
+              Plane plane = frustumPlanes[i];
+              float r = Vector3.Dot(position, plane.normal);
+              Vector3 absNormal = new Vector3(Mathf.Abs(Vector3.Dot(plane.normal, right)), Mathf.Abs(Vector3.Dot(plane.normal, up)), Mathf.Abs(Vector3.Dot(plane.normal, forward)));
+              float f = Vector3.Dot(absNormal, extent);
+              if ((r - f) >= -plane.distance)
+                  return false;
+          }
+          return true;
+      }
+      private static Mutex[] mutexs = new Mutex[20];
 
-    public unsafe struct ObjectCullJob : IJobParallelFor
+      public static NativeArray<DrawingPolicy> policies;
+      public static NativeArray<BinarySort> sorts;
+      [NativeDisableUnsafePtrRestriction]
+      public static Plane* frustumPlanes;
+      public static Vector3 cameraPos;
+      public static float cameraFarClipDistance;
+      #endregion
+      public void Execute(int i)
+      {
+          DrawingPolicy* obj = (DrawingPolicy*)policies.GetUnsafePtr() + i;
+          Vector3 position;
+          if (PlaneTest(ref obj->localToWorldMatrix, ref obj->extent, out position, frustumPlanes))
+          {
+              float distance = Vector3.Distance(position, cameraPos);
+              //Use Sqrt here because usually close objects' account is more than the far objects based on regular LOD design.
+              float layer = Mathf.Sqrt(distance / cameraFarClipDistance);
+              int layerCount = sorts.Length;
+              int layerValue = (int)Mathf.Clamp(Mathf.Lerp(0, layerCount, layer), 0, layerCount - 1);
+              //TODO
+        //      sorts[layerValue].Add(distance, ref *obj, mutexs[layerValue]);
+          }
+      }*/
+}
+public unsafe struct SortJob : IJobParallelFor
+{
+    //  public static NativeArray<BinarySort> sorts;
+    public void Execute(int i)
     {
-        #region STATIC
-        private static bool PlaneTest(ref Matrix4x4 ObjectToWorld, ref Vector3 extent, out Vector3 position, Plane* frustumPlanes)
-        {
-            Vector3 right = new Vector3(ObjectToWorld.m00, ObjectToWorld.m10, ObjectToWorld.m20);
-            Vector3 up = new Vector3(ObjectToWorld.m01, ObjectToWorld.m11, ObjectToWorld.m21);
-            Vector3 forward = new Vector3(ObjectToWorld.m02, ObjectToWorld.m12, ObjectToWorld.m22);
-            position = new Vector3(ObjectToWorld.m03, ObjectToWorld.m13, ObjectToWorld.m23);
-            for (int i = 0; i < 6; ++i)
-            {
-                Plane plane = frustumPlanes[i];
-                float r = Vector3.Dot(position, plane.normal);
-                Vector3 absNormal = new Vector3(Mathf.Abs(Vector3.Dot(plane.normal, right)), Mathf.Abs(Vector3.Dot(plane.normal, up)), Mathf.Abs(Vector3.Dot(plane.normal, forward)));
-                float f = Vector3.Dot(absNormal, extent);
-                if ((r - f) >= -plane.distance)
-                    return false;
-            }
-            return true;
-        }
-        private static Mutex[] mutexs = new Mutex[20];
-        public static NativeArray<DrawingPolicy> policies;
-        public static NativeArray<BinarySort> sorts;
-        [NativeDisableUnsafePtrRestriction]
-        public static Plane* frustumPlanes;
-        public static Vector3 cameraPos;
-        public static float cameraFarClipDistance;
-        #endregion
-        public void Execute(int i)
-        {
-            DrawingPolicy* obj = (DrawingPolicy*)policies.GetUnsafePtr() + i;
-            Vector3 position;
-            if (PlaneTest(ref obj->localToWorldMatrix, ref obj->extent, out position, frustumPlanes))
-            {
-                float distance = Vector3.Distance(position, cameraPos);
-                //Use Sqrt here because usually close objects' account is more than the far objects based on regular LOD design.
-                float layer = Mathf.Sqrt(distance / cameraFarClipDistance);
-                int layerCount = sorts.Length;
-                int layerValue = (int)Mathf.Clamp(Mathf.Lerp(0, layerCount, layer), 0, layerCount - 1);
-                sorts[layerValue].Add(distance, ref *obj, mutexs[layerValue]);
-            }
-        }
-    }
-    public unsafe struct SortJob : IJobParallelFor
-    {
-        public static NativeArray<BinarySort> sorts;
-        public void Execute(int i)
-        {
-            sorts[i].Sort();
-        }
+        //    sorts[i].Sort();
     }
 }
+

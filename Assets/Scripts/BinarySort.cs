@@ -7,74 +7,65 @@ using System.Threading;
 using System;
 namespace MPipeline
 {
-    public struct DrawingPolicy
+    public unsafe struct SortElement
     {
-        public uint rendererID;
-        public Vector3 extent;
-        public Matrix4x4 localToWorldMatrix;
+        public int leftValue;
+        public int rightValue;
+        public float sign;
+        public void* ptr;
     }
-
-    public unsafe struct BinarySort
+    public unsafe struct BinarySort<T> where T : unmanaged
     {
-        public struct Element
-        {
-            public float sign;
-            public DrawingPolicy policy;
-            public int leftValue;
-            public int rightValue;
-        }
-        public NativeArray<Element> elements;
-        public NativeArray<DrawingPolicy> results;
+        private NativeArray<SortElement> elements;
+        private NativeArray<ulong> results;
         public int count;
-        public BinarySort(int capacity)
+        public BinarySort(int capacity, Allocator alloc)
         {
+            elements = new NativeArray<SortElement>(capacity, alloc, NativeArrayOptions.UninitializedMemory);
+            results = new NativeArray<ulong>(capacity, alloc, NativeArrayOptions.UninitializedMemory);
             count = 0;
-            capacity = Mathf.Max(10, capacity);
-            elements = new NativeArray<Element>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            results = new NativeArray<DrawingPolicy>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
         }
-        /// <summary>
-        /// Add a value into binary tree
-        /// </summary>
-        /// <param name="sign"></param> Sort Sign
-        /// <param name="value"></param> value
-        /// <param name="mutex"></param> Thread safe mutex
-        public void Add(float sign, ref DrawingPolicy value, Mutex mutex)
+
+        public void Add(float sign, T* value)
         {
-            int currentCount = Interlocked.Increment(ref count) - 1;
-            if (currentCount >= elements.Length)
-            {
-                mutex.WaitOne();
-                NativeArray<Element> newElements = new NativeArray<Element>(elements.Length * 2, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                long size = UnsafeUtility.SizeOf<Element>() * elements.Length;
-                void* dest = newElements.GetUnsafePtr();
-                void* source = elements.GetUnsafePtr();
-                UnsafeUtility.MemCpy(dest, source, size);
-                elements.Dispose();
-                elements = newElements;
-                results.Dispose();
-                results = new NativeArray<DrawingPolicy>(elements.Length, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                mutex.ReleaseMutex();
-            }
-            Element newElement;
-            newElement.sign = sign;
-            newElement.policy = value;
-            newElement.leftValue = -1;
-            newElement.rightValue = -1;
-            *((Element*)elements.GetUnsafePtr() + currentCount) = newElement;
+            if (count > elements.Length) return;
+            int last = Interlocked.Increment(ref count) - 1;
+            SortElement curt;
+            curt.sign = sign;
+            curt.ptr = value;
+            curt.leftValue = -1;
+            curt.rightValue = -1;
+            elements[last] = curt;
         }
+
+        public T** SortedResult
+        {
+            get
+            {
+                return (T**)results.GetUnsafePtr();
+            }
+        }
+
         public void Clear()
         {
             count = 0;
         }
+
+        public void Dispose()
+        {
+            elements.Dispose();
+            results.Dispose();
+        }
+
         public void Sort()
         {
-            for (int i = 1; i < count; ++i)
+            if (elements.Length == 0) return;
+            for (int i = 1; i < elements.Length; ++i)
             {
                 int currentIndex = 0;
                 STARTFIND:
-                Element* currentIndexValue = ((Element*)elements.GetUnsafePtr() + currentIndex);
-                if (((Element*)elements.GetUnsafePtr() + i)->sign < currentIndexValue->sign)
+                SortElement* currentIndexValue = (SortElement*)elements.GetUnsafePtr() + currentIndex;
+                if (((SortElement*)elements.GetUnsafePtr() + i)->sign < currentIndexValue->sign)
                 {
                     if (currentIndexValue->leftValue < 0)
                     {
@@ -99,15 +90,10 @@ namespace MPipeline
                     }
                 }
             }
-            if (count <= 0) return;
             int start = 0;
             Iterate(0, ref start);
         }
-        public void Dispose()
-        {
-            elements.Dispose();
-            results.Dispose();
-        }
+
         private void Iterate(int i, ref int targetLength)
         {
             int leftValue = elements[i].leftValue;
@@ -115,7 +101,7 @@ namespace MPipeline
             {
                 Iterate(leftValue, ref targetLength);
             }
-            results[targetLength] = ((Element*)elements.GetUnsafePtr() + (ulong)i)->policy;
+            results[targetLength] = (ulong)(((SortElement*)elements.GetUnsafePtr() + i)->ptr);
             targetLength++;
             int rightValue = elements[i].rightValue;
             if (rightValue >= 0)

@@ -151,11 +151,12 @@ float4 unity_Ambient;
 
 // fragment shader
 void frag_surf (v2f_surf IN,
-    out float4 outGBuffer0 : SV_Target0,
-    out float4 outGBuffer1 : SV_Target1,
-    out float4 outGBuffer2 : SV_Target2,
-    out float4 outEmission : SV_Target3,
-	out float2 outMotionVector : SV_Target4
+    out half4 outGBuffer0 : SV_Target0,
+    out half4 outGBuffer1 : SV_Target1,
+    out half4 outGBuffer2 : SV_Target2,
+    out half4 outEmission : SV_Target3,
+	out half2 outMotionVector : SV_Target4,
+	out float outDepth : SV_Target5
 ) {
   // prepare and unpack data
   Input surfIN;
@@ -168,7 +169,7 @@ void frag_surf (v2f_surf IN,
   surf (surfIN, o);
   o.Normal = normalize(mul(o.Normal, wdMatrix));
   outEmission = ProceduralStandardSpecular_Deferred (o, worldViewDir, outGBuffer0, outGBuffer1, outGBuffer2); //GI neccessary here!
-  outGBuffer2.w = IN.pos.z;
+  outDepth = IN.pos.z;
   //Calculate Motion Vector
   float4 screenPos = mul(_NonJitterVP, float4(worldPos, 1));
   float2 screenUV = GetScreenPos(screenPos);

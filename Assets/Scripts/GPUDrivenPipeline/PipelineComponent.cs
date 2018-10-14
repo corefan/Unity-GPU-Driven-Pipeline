@@ -262,12 +262,13 @@ public struct RenderTargets
                 Shader.PropertyToID("_CameraGBufferTexture1"),
                 Shader.PropertyToID("_CameraGBufferTexture2"),
                 Shader.PropertyToID("_CameraGBufferTexture3"),
-                Shader.PropertyToID("_CameraMotionVectorsTexture")
+                Shader.PropertyToID("_CameraMotionVectorsTexture"),
+                Shader.PropertyToID("_CameraDepthTexture")
         };
-        rt.colorBuffer = default(RenderBuffer);
-        rt.gbufferTextures = new RenderTexture[5];
-        rt.geometryColorBuffer = new RenderBuffer[5];
-        rt.depthBuffer = default(RenderBuffer);
+        rt.colorBuffer = default;
+        rt.gbufferTextures = new RenderTexture[6];
+        rt.geometryColorBuffer = new RenderBuffer[6];
+        rt.depthBuffer = default;
         rt.renderTarget = null;
         rt.backupTarget = null;
         return rt;
