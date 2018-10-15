@@ -92,13 +92,24 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             return ref *(ptr + id);
         }
     }
-    public int ConcurrentAdd(T value)
+    public int ConcurrentAdd(T value, object lockerObj)
     {
         int last = Interlocked.Increment(ref data->count);
         //Concurrent Resize
         if (last > data->capacity)
         {
-            return -1;
+            lock(lockerObj)
+            {
+                if(last > data->capacity)
+                {
+                    int newCapacity = data->capacity * 2;
+                    void* newPtr = UnsafeUtility.Malloc(sizeof(T) * newCapacity, 16, data->allocator);
+                    UnsafeUtility.MemCpy(newPtr, data->ptr, sizeof(T) * data->capacity);
+                    UnsafeUtility.Free(data->ptr, data->allocator);
+                    data->ptr = newPtr;
+                    data->capacity = newCapacity;
+                }
+            }
         }
         last--;
         Resize();
@@ -106,13 +117,24 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
         *(ptr + last) = value;
         return last;
     }
-    public int ConcurrentAdd(ref T value)
+    public int ConcurrentAdd(ref T value, object lockerObj)
     {
         int last = Interlocked.Increment(ref data->count);
         //Concurrent Resize
         if (last > data->capacity)
         {
-            return -1;
+            lock (lockerObj)
+            {
+                if (last > data->capacity)
+                {
+                    int newCapacity = data->capacity * 2;
+                    void* newPtr = UnsafeUtility.Malloc(sizeof(T) * newCapacity, 16, data->allocator);
+                    UnsafeUtility.MemCpy(newPtr, data->ptr, sizeof(T) * data->capacity);
+                    UnsafeUtility.Free(data->ptr, data->allocator);
+                    data->ptr = newPtr;
+                    data->capacity = newCapacity;
+                }
+            }
         }
         last--;
         Resize();

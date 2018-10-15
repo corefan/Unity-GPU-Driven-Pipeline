@@ -9,7 +9,7 @@ Shader "Hidden/PostProcessing/MotionBlur"
         float4 _MainTex_TexelSize;
 
         // Camera depth texture
-		Texture2D _CameraGBufferTexture2; SamplerState sampler_CameraGBufferTexture2;
+		Texture2D _CameraDepthTexture; SamplerState sampler_CameraDepthTexture;
 
         // Camera motion vectors texture
         TEXTURE2D_SAMPLER2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture);
@@ -71,7 +71,7 @@ Shader "Hidden/PostProcessing/MotionBlur"
             v /= max(1.0, length(v) * _RcpMaxBlurRadius);
 
             // Sample the depth of the pixel.
-            float d = Linear01Depth(_CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, i.texcoord).w);
+            float d = Linear01Depth(_CameraDepthTexture.Sample(sampler_CameraDepthTexture, i.texcoord).r);
 
             // Pack into 10/10/10/2 format.
             return float4((v * _RcpMaxBlurRadius + 1.0) * 0.5, d, 0.0);

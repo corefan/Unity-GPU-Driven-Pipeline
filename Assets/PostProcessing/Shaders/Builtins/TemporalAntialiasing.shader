@@ -258,7 +258,7 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
             // HistoryBlend
             half weight = clamp(lerp(_FinalBlendParameters.x, _FinalBlendParameters.y, length(velocity) * _FinalBlendParameters.z), _FinalBlendParameters.y, _FinalBlendParameters.x);
             half4 temporalColor = lerp(currColor, lastColor, weight);
-            return clamp(temporalColor, 0, HALF_MAX_MINUS1);
+            return temporalColor;
         }
 
     ENDHLSL
