@@ -5,11 +5,13 @@ namespace MPipeline
 {
     public class ReflectionCube : MonoBehaviour
     {
+        public static List<ReflectionCube> allCubes = new List<ReflectionCube>(100);
         public float intensity = 1;
         public float importance = 1;
         public bool useBoxProjection = false;
-        public static List<ReflectionCube> allCubes = new List<ReflectionCube>(100);
+        public Cubemap reflectionCube;
         private int currentIndex;
+        #region PRIVATE
         private void Awake()
         {
             currentIndex = allCubes.Count;
@@ -18,13 +20,15 @@ namespace MPipeline
 
         private void OnDestroy()
         {
-            if(allCubes.Count <= 1)
+            if (allCubes.Count <= 1)
             {
                 allCubes.Clear();
                 return;
             }
-            allCubes[currentIndex] = allCubes[allCubes.Count - 1];
+            int last = allCubes.Count - 1;
+            allCubes[currentIndex] = allCubes[last];
             allCubes[currentIndex].currentIndex = currentIndex;
+            allCubes.RemoveAt(last);
         }
 
         private void OnDrawGizmosSelected()
@@ -32,5 +36,17 @@ namespace MPipeline
             Gizmos.color = new Color(0, 1, 0, 0.5f);
             Gizmos.DrawMesh(GraphicsUtility.cubeMesh, transform.position, transform.rotation, transform.localScale);
         }
+
+        private void OnDrawGizmos()
+        {
+            Gizmos.DrawWireMesh(GraphicsUtility.cubeMesh, transform.position, transform.rotation, transform.localScale);
+        }
+        #endregion
+        #region PUBLIC
+        public void DrawCurrent()
+        {
+
+        }
+        #endregion
     }
 }

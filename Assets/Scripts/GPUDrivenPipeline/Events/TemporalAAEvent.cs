@@ -23,10 +23,10 @@ namespace MPipeline
         [Range(0f, 0.99f)]
         public float motionBlending = 0.9f;
         [Tooltip("Screen Space AABB Bounding for stationary state(Larger will take less flask but more ghost)")]
-        [Range(0.05f, 3f)]
+        [Range(0.05f, 6f)]
         public float stationaryAABBScale = 1.25f;
         [Tooltip("Screen Space AABB Bounding for motion state(Larger will take less flask but more ghost)")]
-        [Range(0.05f, 3f)]
+        [Range(0.05f, 6f)]
         public float motionAABBScale = 0.5f;
         private Vector2 jitter;
         private int sampleIndex = 0;

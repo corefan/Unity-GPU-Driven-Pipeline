@@ -140,8 +140,8 @@ v2f_surf vert_surf (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID
   	v2f_surf o;
   	o.pack0.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
   	o.pos = mul(UNITY_MATRIX_VP, float4(v.vertex, 1));
-  	o.worldNormal =float4(v.normal, v.vertex.x);
-  	o.worldTangent = float4( v.tangent.xyz, v.vertex.z);
+  	o.worldTangent = float4( v.tangent.xyz, v.vertex.x);
+	o.worldNormal =float4(v.normal, v.vertex.z);
   	float tangentSign = v.tangent.w * unity_WorldTransformParams.w;
   	o.worldBinormal = float4(cross(v.normal, o.worldTangent.xyz) * tangentSign, v.vertex.y);
   	o.worldViewDir = UnityWorldSpaceViewDir(v.vertex);

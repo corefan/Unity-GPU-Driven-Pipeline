@@ -309,6 +309,53 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1055881862
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1055881864}
+  - component: {fileID: 1055881863}
+  m_Layer: 0
+  m_Name: Reflection
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1055881863
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055881862}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 392e3d5292eb0514eb8e780c5c667c07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  intensity: 1
+  importance: 1
+  useBoxProjection: 0
+  reflectionCube: {fileID: 0}
+--- !u!4 &1055881864
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055881862}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 13.93, y: 3.46, z: -8.47}
+  m_LocalScale: {x: 19.062428, y: 12.270982, z: 23.403666}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 7
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1111116808 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2273898056341281472, guid: ac5ee964c3188c9419367fe0e61ca119,
@@ -604,8 +651,8 @@ MonoBehaviour:
   sharpness: 0.25
   stationaryBlending: 0.95
   motionBlending: 0.92
-  stationaryAABBScale: 1.5
-  motionAABBScale: 0.4
+  stationaryAABBScale: 3
+  motionAABBScale: 0.65
 --- !u!114 &1657096693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -618,7 +665,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d237876de09eba543825aad2b835200b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_enabledInPipeline: 0
+  m_enabledInPipeline: 1
   m_enableBeforePipeline: 0
   layer: 2600
   profile: {fileID: 11400000, guid: 6d0d1a1ad21c9604896988c0fd15fc68, type: 2}

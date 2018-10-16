@@ -25,7 +25,6 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
         data->allocator = alloc;
         data->ptr = UnsafeUtility.Malloc(sizeof(T) * capacity, 16, alloc);
     }
-
     public NativeList(int count, Allocator alloc, T defaultValue)
     {
         data = (NativeListData*)UnsafeUtility.Malloc(sizeof(NativeListData), 16, alloc);
@@ -39,7 +38,6 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             add[i] = defaultValue;
         }
     }
-
     public Allocator allocator
     {
         get

@@ -1,10 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
-using System.Threading;
-using System;
+using UnityEngine;
+
 namespace MPipeline
 {
     public unsafe struct SortElement
@@ -12,38 +13,30 @@ namespace MPipeline
         public int leftValue;
         public int rightValue;
         public float sign;
-        public void* ptr;
+        public int value;
     }
-    public unsafe struct BinarySort<T> where T : unmanaged
+    public unsafe struct BinarySort
     {
         private NativeArray<SortElement> elements;
-        private NativeArray<ulong> results;
+        private NativeArray<int> results;
         public int count;
         public BinarySort(int capacity, Allocator alloc)
         {
             elements = new NativeArray<SortElement>(capacity, alloc, NativeArrayOptions.UninitializedMemory);
-            results = new NativeArray<ulong>(capacity, alloc, NativeArrayOptions.UninitializedMemory);
+            results = new NativeArray<int>(capacity, alloc, NativeArrayOptions.UninitializedMemory);
             count = 0;
         }
 
-        public void Add(float sign, T* value)
+        public void Add(float sign, int value)
         {
             if (count > elements.Length) return;
             int last = Interlocked.Increment(ref count) - 1;
             SortElement curt;
             curt.sign = sign;
-            curt.ptr = value;
+            curt.value = value;
             curt.leftValue = -1;
             curt.rightValue = -1;
             elements[last] = curt;
-        }
-
-        public T** SortedResult
-        {
-            get
-            {
-                return (T**)results.GetUnsafePtr();
-            }
         }
 
         public void Clear()
@@ -101,7 +94,7 @@ namespace MPipeline
             {
                 Iterate(leftValue, ref targetLength);
             }
-            results[targetLength] = (ulong)(((SortElement*)elements.GetUnsafePtr() + i)->ptr);
+            results[targetLength] = ((SortElement*)elements.GetUnsafePtr() + i)->value;
             targetLength++;
             int rightValue = elements[i].rightValue;
             if (rightValue >= 0)

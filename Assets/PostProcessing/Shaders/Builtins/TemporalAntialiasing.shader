@@ -138,24 +138,24 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
             return (Color.g * 2) + (Color.r + Color.b);
         }
 
-        inline half HdrWeight4(half3 Color, half Exposure) 
+        inline half HdrWeight4(half3 Color, const half Exposure) 
         {
             return rcp(Luma4(Color) * Exposure + 4);
         }
-#define SAMPLE_GBUFFER_OFFSET(x,y,z,a) (x.Sample(y,z,a).r)
+        
+        #define SAMPLE_DEPTH_OFFSET(x,y,z,a) (x.Sample(y,z,a).r)
         half2 ReprojectedMotionVectorUV(half2 uv)
         {
             const float2 k = _CameraDepthTexture_TexelSize.xy;
-            half neighborhood[9];
-            neighborhood[0] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, -1));
-            neighborhood[1] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
-            neighborhood[2] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, -1));
-            neighborhood[3] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 0));
-            neighborhood[4] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, 0));
-            neighborhood[5] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 0));
-            neighborhood[6] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 1));
-            neighborhood[7] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
-            neighborhood[8] = SAMPLE_GBUFFER_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 1));
+            half neighborhood[8];
+            neighborhood[0] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, -1));
+            neighborhood[1] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
+            neighborhood[2] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, -1));
+            neighborhood[3] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 0));
+            neighborhood[4] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 1));
+            neighborhood[5] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(1, 0));
+            neighborhood[6] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(-1, 1));
+            neighborhood[7] = SAMPLE_DEPTH_OFFSET(_CameraDepthTexture, sampler_CameraDepthTexture, uv, int2(0, -1));
 
         #if defined(UNITY_REVERSED_Z)
             #define COMPARE_DEPTH(a, b) step(b, a)
@@ -169,11 +169,10 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
             result = lerp(result, half3(0, -1, neighborhood[1]), COMPARE_DEPTH(neighborhood[1], result.z));
             result = lerp(result, half3(1, -1, neighborhood[2]), COMPARE_DEPTH(neighborhood[2], result.z));
             result = lerp(result, half3(-1, 0, neighborhood[3]), COMPARE_DEPTH(neighborhood[3], result.z));
-            result = lerp(result, half3(0, 0, neighborhood[4]), COMPARE_DEPTH(neighborhood[4], result.z));
+            result = lerp(result, half3(1, 1, neighborhood[4]), COMPARE_DEPTH(neighborhood[4], result.z));
             result = lerp(result, half3(1, 0, neighborhood[5]), COMPARE_DEPTH(neighborhood[5], result.z));
             result = lerp(result, half3(-1, 1, neighborhood[6]), COMPARE_DEPTH(neighborhood[6], result.z));
             result = lerp(result, half3(0, -1, neighborhood[7]), COMPARE_DEPTH(neighborhood[7], result.z));
-            result = lerp(result, half3(1, 1, neighborhood[8]), COMPARE_DEPTH(neighborhood[8], result.z));
 
             return (uv + result.xy * k);
         }
@@ -186,65 +185,53 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
 
             half2 closest = ReprojectedMotionVectorUV(i.texcoord);
             half2 velocity = SAMPLE_TEXTURE2D(_CameraMotionVectorsTexture, sampler_CameraMotionVectorsTexture, closest).xy;
-            half AABBScale = lerp(_TemporalClipBounding.x, _TemporalClipBounding.y, saturate(length(velocity) * _TemporalClipBounding.z));
+
 //////////////////TemporalClamp
             half4 TopLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(-1, -1));
             half4 TopCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(0, -1));
             half4 TopRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(1, -1));
             half4 MiddleLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(-1,  0));
-            half4 MiddleCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2( 0,  0));
+            half4 MiddleCenter = SAMPLE_TEXTURE2D(_MainTex, _MainTexSampler, uv);
             half4 MiddleRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(1,  0));
             half4 BottomLeft = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(-1, 1));
             half4 BottomCenter = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(0, 1));
             half4 BottomRight = SAMPLE_TEXTURE2D_OFFSET(_MainTex, _MainTexSampler, uv, int2(1, 1));
 
-            // Resolver filtter 
-            #if AA_Filter
-                half SampleWeights[9];
-                SampleWeights[0] = HdrWeight4(TopLeft.rgb, ExposureScale);
-                SampleWeights[1] = HdrWeight4(TopCenter.rgb, ExposureScale);
-                SampleWeights[2] = HdrWeight4(TopRight.rgb, ExposureScale);
-                SampleWeights[3] = HdrWeight4(MiddleLeft.rgb, ExposureScale);
-                SampleWeights[4] = HdrWeight4(MiddleCenter.rgb, ExposureScale);
-                SampleWeights[5] = HdrWeight4(MiddleRight.rgb, ExposureScale);
-                SampleWeights[6] = HdrWeight4(BottomLeft.rgb, ExposureScale);
-                SampleWeights[7] = HdrWeight4(BottomCenter.rgb, ExposureScale);
-                SampleWeights[8] = HdrWeight4(BottomRight.rgb, ExposureScale);
-
-                half TotalWeight = SampleWeights[0] + SampleWeights[1] + SampleWeights[2] + SampleWeights[3] + SampleWeights[4] + SampleWeights[5] + SampleWeights[6] + SampleWeights[7] + SampleWeights[8];  
-                half4 Filtered = (TopLeft * SampleWeights[0] + TopCenter * SampleWeights[1] + TopRight * SampleWeights[2] + MiddleLeft * SampleWeights[3] + MiddleCenter * SampleWeights[4] + MiddleRight * SampleWeights[5] + BottomLeft * SampleWeights[6] + BottomCenter * SampleWeights[7] + BottomRight * SampleWeights[8]) / TotalWeight;
-            #endif
-
+            half SampleWeights[9];
+            SampleWeights[0] = HdrWeight4(TopLeft.rgb, ExposureScale);
+            SampleWeights[1] = HdrWeight4(TopCenter.rgb, ExposureScale);
+            SampleWeights[2] = HdrWeight4(TopRight.rgb, ExposureScale);
+            SampleWeights[3] = HdrWeight4(MiddleLeft.rgb, ExposureScale);
+            SampleWeights[4] = HdrWeight4(MiddleCenter.rgb, ExposureScale);
+            SampleWeights[5] = HdrWeight4(MiddleRight.rgb, ExposureScale);
+            SampleWeights[6] = HdrWeight4(BottomLeft.rgb, ExposureScale);
+            SampleWeights[7] = HdrWeight4(BottomCenter.rgb, ExposureScale);
+            SampleWeights[8] = HdrWeight4(BottomRight.rgb, ExposureScale);
+            half TotalWeight = SampleWeights[0] + SampleWeights[1] + SampleWeights[2] 
+                               + SampleWeights[3] + SampleWeights[4] + SampleWeights[5] 
+                               + SampleWeights[6] + SampleWeights[7] + SampleWeights[8];  
+                                
+            half4 Filtered = (TopLeft * SampleWeights[0] + TopCenter * SampleWeights[1]
+                            + TopRight * SampleWeights[2] + MiddleLeft * SampleWeights[3] 
+                            + MiddleCenter * SampleWeights[4] + MiddleRight * SampleWeights[5] 
+                            + BottomLeft * SampleWeights[6] + BottomCenter * SampleWeights[7] 
+                            + BottomRight * SampleWeights[8]) / TotalWeight;
             // Resolver Average
             half4 minColor, maxColor;
             half4 m1, m2, mean, stddev;
-            #if AA_VARIANCE
-            //
-                m1 = TopLeft + TopCenter + TopRight + MiddleLeft + MiddleCenter + MiddleRight + BottomLeft + BottomCenter + BottomRight;
-                m2 = TopLeft * TopLeft + TopCenter * TopCenter + TopRight * TopRight + MiddleLeft * MiddleLeft + MiddleCenter * MiddleCenter + MiddleRight * MiddleRight + BottomLeft * BottomLeft + BottomCenter * BottomCenter + BottomRight * BottomRight;
+            float lenOfVelocity = length(velocity);
+            half AABBScale = lerp(_TemporalClipBounding.x, _TemporalClipBounding.y, saturate(lenOfVelocity * _TemporalClipBounding.z));
+            m1 = TopLeft + TopCenter + TopRight + MiddleLeft + MiddleCenter + MiddleRight + BottomLeft + BottomCenter + BottomRight;
+            m2 = TopLeft * TopLeft + TopCenter * TopCenter
+                + TopRight * TopRight + MiddleLeft * MiddleLeft
+                + MiddleCenter * MiddleCenter + MiddleRight * MiddleRight + BottomLeft * BottomLeft + BottomCenter * BottomCenter + BottomRight * BottomRight;
                 
-                mean = m1 / 9;
-                stddev = sqrt(m2 / 9 - mean * mean);
-                
-                minColor = mean - AABBScale * stddev;
-                maxColor = mean + AABBScale * stddev;
-            //
-            #else 
-            //
-                minColor = min(TopLeft, min(TopCenter, min(TopRight, min(MiddleLeft, min(MiddleCenter, min(MiddleRight, min(BottomLeft, min(BottomCenter, BottomRight))))))));
-                maxColor = max(TopLeft, max(TopCenter, max(TopRight, max(MiddleLeft, max(MiddleCenter, max(MiddleRight, max(BottomLeft, max(BottomCenter, BottomRight))))))));
-                    
-                half4 center = (minColor + maxColor) * 0.5;
-                minColor = (minColor - center) * AABBScale + center;
-                maxColor = (maxColor - center) * AABBScale + center;
-            //
-            #endif
-
-            // filtter 
-            #if AA_Filter
-                minColor = min(minColor, Filtered);
-                maxColor = max(maxColor, Filtered);
-            #endif
+            mean = m1 / 9;
+            stddev = sqrt(m2 / 9 - mean * mean);  
+            minColor = mean - AABBScale * stddev;
+            maxColor = mean + AABBScale * stddev;
+            minColor = min(minColor, Filtered);
+            maxColor = max(maxColor, Filtered);
 
 //////////////////TemporalResolver
             half4 currColor = MiddleCenter;
@@ -256,7 +243,7 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
             half4 lastColor = SAMPLE_TEXTURE2D(_HistoryTex, sampler_HistoryTex, ((i.texcoord - velocity)));
             lastColor = clamp(lastColor, minColor, maxColor);
             // HistoryBlend
-            half weight = clamp(lerp(_FinalBlendParameters.x, _FinalBlendParameters.y, length(velocity) * _FinalBlendParameters.z), _FinalBlendParameters.y, _FinalBlendParameters.x);
+            half weight = clamp(lerp(_FinalBlendParameters.x, _FinalBlendParameters.y, lenOfVelocity * _FinalBlendParameters.z), _FinalBlendParameters.y, _FinalBlendParameters.x);
             half4 temporalColor = lerp(currColor, lastColor, weight);
             return temporalColor;
         }
