@@ -13,6 +13,7 @@ namespace MPipeline
         public Shader spotlightShader;
         public Shader motionVectorShader;
         public Shader shadowMaskShader;
+        public Shader reflectionShader;
         public Mesh occluderMesh;
     }
 }

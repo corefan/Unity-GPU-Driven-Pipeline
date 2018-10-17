@@ -177,6 +177,24 @@ public unsafe static class PipelineFunctions
         shadMap.frustumCorners[7] = targetCamera.ViewportToWorldPoint(new Vector3(1, 1, distance.y));
     }
 
+    public static bool FrustumCulling(ref Matrix4x4 ObjectToWorld, ref Vector3 extent, out Vector3 position, Plane* frustumPlanes)
+    {
+        Vector3 right = new Vector3(ObjectToWorld.m00, ObjectToWorld.m10, ObjectToWorld.m20);
+        Vector3 up = new Vector3(ObjectToWorld.m01, ObjectToWorld.m11, ObjectToWorld.m21);
+        Vector3 forward = new Vector3(ObjectToWorld.m02, ObjectToWorld.m12, ObjectToWorld.m22);
+        position = new Vector3(ObjectToWorld.m03, ObjectToWorld.m13, ObjectToWorld.m23);
+        for (int i = 0; i < 6; ++i)
+        {
+            Plane plane = frustumPlanes[i];
+            float r = Vector3.Dot(position, plane.normal);
+            Vector3 absNormal = new Vector3(Mathf.Abs(Vector3.Dot(plane.normal, right)), Mathf.Abs(Vector3.Dot(plane.normal, up)), Mathf.Abs(Vector3.Dot(plane.normal, forward)));
+            float f = Vector3.Dot(absNormal, extent);
+            if ((r - f) >= -plane.distance)
+                return false;
+        }
+        return true;
+    }
+
     public static void SetShadowCameraPositionStaticFit(ref StaticFit fit, ref OrthoCam shadCam, int pass, Matrix4x4[] vpMatrices, out Matrix4x4 invShadowVP)
     {
         float range = 0;

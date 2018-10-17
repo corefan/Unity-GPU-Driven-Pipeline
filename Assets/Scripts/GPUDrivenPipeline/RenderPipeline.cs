@@ -1,9 +1,6 @@
-﻿using UnityEngine.Rendering;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Collections;
-using System;
+using Unity.Jobs;
 namespace MPipeline
 {
     public unsafe class RenderPipeline : MonoBehaviour
@@ -90,6 +87,8 @@ namespace MPipeline
             {
                 i.PreRenderFrame(cam);
             }
+            //Run job system together
+            JobHandle.ScheduleBatchedJobs();
         }
 
         public void Render(Camera cam, RenderTexture dest)

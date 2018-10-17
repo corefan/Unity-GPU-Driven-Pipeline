@@ -14,9 +14,45 @@ namespace MPipeline
         };
         [HideInInspector]
         public bool m_enabledInPipeline = false;
-        [HideInInspector]
-        public bool m_enableBeforePipeline = false;
         public float layer = 2000;
+        private bool pre = false;
+        private bool post = false;
+        //Will Cause GC stress
+        //So only run in editor or Awake
+        private void SetAttribute()
+        {
+            pre = false;
+            post = false;
+            object[] allAttribute = GetType().GetCustomAttributes(typeof(PipelineEventAttribute), false);
+            foreach (var i in allAttribute)
+            {
+                if (i.GetType() == typeof(PipelineEventAttribute))
+                {
+                    PipelineEventAttribute att = i as PipelineEventAttribute;
+                    pre = att.preRender;
+                    post = att.postRender;
+                    break;
+                }
+            }
+        }
+        private void SetEnable(bool value)
+        {
+            if (value)
+            {
+                if (post) RenderPipeline.drawEvents.InsertTo(this, compareFunc);
+                if (pre) RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+            }
+            else
+            {
+#if UNITY_EDITOR
+                RenderPipeline.drawEvents.Remove(this);
+                RenderPipeline.preRenderEvents.Remove(this);
+#else
+                if (post) RenderPipeline.drawEvents.Remove(this);
+                if (pre) RenderPipeline.preRenderEvents.Remove(this);
+#endif
+            }
+        }
         public bool enabledInPipeline
         {
             get
@@ -27,62 +63,28 @@ namespace MPipeline
             {
                 if (m_enabledInPipeline == value) return;
                 m_enabledInPipeline = value;
-                SetIn(value);
+#if UNITY_EDITOR
+                SetAttribute();
+#endif
+                SetEnable(value);
             }
         }
-        public bool enableBeforePipeline
-        {
-            get
-            {
-                return m_enableBeforePipeline;
-            }
-            set
-            {
-                if (m_enableBeforePipeline == value) return;
-                m_enableBeforePipeline = value;
-                SetBefore(value);
-            }
-        }
-        private void SetBefore(bool value)
-        {
-            if (value)
-            {
-                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
-            }
-            else
-            {
-                RenderPipeline.preRenderEvents.Remove(this);
-            }
-        }
-        private void SetIn(bool value)
-        {
-            if (value)
-            {
-                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
-            }
-            else
-            {
-                RenderPipeline.drawEvents.Remove(this);
-            }
-        }
+
         public void InitEvent(PipelineResources resources)
-        { 
+        {
+            SetAttribute();
             if (m_enabledInPipeline)
             {
-                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
-            }
-            if (m_enableBeforePipeline)
-            {
-                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+                SetEnable(true);
             }
             Init(resources);
         }
         public void DisposeEvent()
         {
             if (m_enabledInPipeline)
-                RenderPipeline.drawEvents.Remove(this);
-            if (m_enableBeforePipeline)
-                RenderPipeline.preRenderEvents.Remove(this);
+            {
+                SetEnable(false);
+            }
             Dispose();
         }
         protected abstract void Init(PipelineResources resources);

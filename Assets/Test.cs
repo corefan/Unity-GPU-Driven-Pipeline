@@ -3,21 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
-using MPipeline;
+[ExecuteInEditMode]
 public unsafe class Test : MonoBehaviour
 {
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
-        NativeList<int> values = new NativeList<int>(1, Allocator.Temp);
-        TestJob tst;
-        tst.values = values;
-        TestJob.obj = this;
-        tst.Schedule(10000, 1).Complete();
-        foreach(var i in values)
-        {
-            Debug.Log(i);
-        }
+        Debug.Log("Awake");
     }
 }
 
