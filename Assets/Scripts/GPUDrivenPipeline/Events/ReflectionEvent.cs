@@ -25,9 +25,9 @@ namespace MPipeline
             
         }
 
-        public override void PreRenderFrame(Camera cam)
+        public override void PreRenderFrame(ref PipelineCommandData data)
         {
-            throw new System.NotImplementedException();
+            //TODO
         }
     }
 }

@@ -14,15 +14,15 @@ namespace MPipeline
         };
         [HideInInspector]
         public bool m_enabledInPipeline = false;
+        [HideInInspector]
+        public bool m_enableBeforePipeline = false;
         public float layer = 2000;
         private bool pre = false;
         private bool post = false;
         //Will Cause GC stress
         //So only run in editor or Awake
-        private void SetAttribute()
+        public void SetAttribute()
         {
-            pre = false;
-            post = false;
             object[] allAttribute = GetType().GetCustomAttributes(typeof(PipelineEventAttribute), false);
             foreach (var i in allAttribute)
             {
@@ -31,29 +31,28 @@ namespace MPipeline
                     PipelineEventAttribute att = i as PipelineEventAttribute;
                     pre = att.preRender;
                     post = att.postRender;
-                    break;
+                    return;
                 }
             }
+            pre = false;
+            post = false;
+            
         }
-        private void SetEnable(bool value)
+
+        public bool EnableEvent
         {
-            if (value)
+            get
             {
-                if (post) RenderPipeline.drawEvents.InsertTo(this, compareFunc);
-                if (pre) RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+                return m_enabledInPipeline || m_enableBeforePipeline;
             }
-            else
+            set
             {
-#if UNITY_EDITOR
-                RenderPipeline.drawEvents.Remove(this);
-                RenderPipeline.preRenderEvents.Remove(this);
-#else
-                if (post) RenderPipeline.drawEvents.Remove(this);
-                if (pre) RenderPipeline.preRenderEvents.Remove(this);
-#endif
+                enabledInPipeline = post && value;
+                enableBeforePipeline = pre && value;
             }
         }
-        public bool enabledInPipeline
+
+        private bool enabledInPipeline
         {
             get
             {
@@ -63,10 +62,45 @@ namespace MPipeline
             {
                 if (m_enabledInPipeline == value) return;
                 m_enabledInPipeline = value;
-#if UNITY_EDITOR
-                SetAttribute();
-#endif
-                SetEnable(value);
+                SetIn(value);
+            }
+        }
+
+        private bool enableBeforePipeline
+        {
+            get
+            {
+                return m_enableBeforePipeline;
+            }
+            set
+            {
+                if (m_enableBeforePipeline == value) return;
+                m_enableBeforePipeline = value;
+                SetBefore(value);
+            }
+        }
+
+        private void SetIn(bool value)
+        {
+            if (value)
+            {
+                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
+            }
+            else
+            {
+                RenderPipeline.drawEvents.Remove(this);
+            }
+        }
+
+        private void SetBefore(bool value)
+        {
+            if (value)
+            {
+                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+            }
+            else
+            {
+                RenderPipeline.preRenderEvents.Remove(this);
             }
         }
 
@@ -75,7 +109,11 @@ namespace MPipeline
             SetAttribute();
             if (m_enabledInPipeline)
             {
-                SetEnable(true);
+                SetIn(true);
+            }
+            if(m_enableBeforePipeline)
+            {
+                SetBefore(true);
             }
             Init(resources);
         }
@@ -83,13 +121,17 @@ namespace MPipeline
         {
             if (m_enabledInPipeline)
             {
-                SetEnable(false);
+                SetIn(false);
+            }
+            if (m_enableBeforePipeline)
+            {
+                SetBefore(false);
             }
             Dispose();
         }
-        protected abstract void Init(PipelineResources resources);
-        protected abstract void Dispose();
-        public abstract void FrameUpdate(ref PipelineCommandData data);
-        public abstract void PreRenderFrame(Camera cam);
+        protected virtual void Init(PipelineResources resources) { }
+        protected virtual void Dispose() { }
+        public virtual void FrameUpdate(ref PipelineCommandData data) { }
+        public virtual void PreRenderFrame(ref PipelineCommandData data) { }
     }
 }

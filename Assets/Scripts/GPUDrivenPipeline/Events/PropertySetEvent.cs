@@ -7,9 +7,6 @@ namespace MPipeline
     public class PropertySetEvent : PipelineEvent
     {
         private Dictionary<Camera, Matrix4x4> lastVPs = new Dictionary<Camera, Matrix4x4>();
-        protected override void Init(PipelineResources resources)
-        {
-        }
 
         protected override void Dispose()
         {
@@ -28,11 +25,6 @@ namespace MPipeline
             lastVPs[data.cam] = nonJitterVP;
             Shader.SetGlobalMatrix(ShaderIDs._InvVP, data.inverseVP);
             Shader.SetGlobalVectorArray(ShaderIDs._FarClipCorner, data.arrayCollection.farFrustumCorner);
-        }
-
-        public override void PreRenderFrame(Camera cam)
-        {
-
         }
     }
 }

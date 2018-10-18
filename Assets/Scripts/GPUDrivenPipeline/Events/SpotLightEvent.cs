@@ -52,11 +52,6 @@ namespace MPipeline.Light
             }
         }
 
-        public override void PreRenderFrame(Camera cam)
-        {
-            throw new System.NotImplementedException();
-        }
-
         #region STATIC
         public static void GetCorners(ref PerspCam cam, Vector4[] corners)
         {

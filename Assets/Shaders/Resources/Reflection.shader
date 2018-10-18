@@ -16,7 +16,6 @@ CGINCLUDE
                 float4 vertex : SV_POSITION;
             };
             float4x4 _InvVP;    //Inverse View Project Matrix
-            float4 _ProbeCenter; //XYZ: Center W: intensity
             float3 _Size;
             TextureCube<half4> _ReflectionProbe; SamplerState sampler_ReflectionProbe;
             Texture2D<half4> _CameraGBufferTexture0; SamplerState sampler_CameraGBufferTexture0;       //RGB Diffuse A AO
@@ -27,6 +26,7 @@ ENDCG
     SubShader
     {
         ZTest Greater ZWrite off
+        Cull front
         Blend one one
         Tags { "RenderType"="Opaque" }
         LOD 100
@@ -51,10 +51,10 @@ ENDCG
                 float depth = _CameraDepthTexture.Sample(sampler_CameraDepthTexture, screenUV);
                 float4 v_worldPos = mul(_InvVP, float4(screenUV * 2 - 1, depth, 1));
                 float3 worldPos = v_worldPos.xyz / v_worldPos.w;
-                float3 sampleVector = worldPos - _ProbeCenter.xyz;
-                sampleVector = normalize(sampleVector);
+                float3 viewDir = worldPos - _WorldSpaceCameraPos;
+                half3 normal = _CameraGBufferTexture2.Sample(sampler_CameraGBufferTexture2, screenUV);
+                float3 sampleVector = reflect(normalize(viewDir), normalize(normal));
                 float4 result = _ReflectionProbe.Sample(sampler_ReflectionProbe, sampleVector);
-                result.xyz *= _ProbeCenter.w;
                 return result;
             }
             ENDCG

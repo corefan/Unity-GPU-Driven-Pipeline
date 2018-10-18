@@ -15,8 +15,14 @@ namespace MPipeline
 
         public override void OnInspectorGUI()
         {
+            targetObj.SetAttribute();
             EditorGUILayout.LabelField("Pipeline Settings:");
-            targetObj.enabledInPipeline = EditorGUILayout.Toggle("Enable In Pipeline", targetObj.enabledInPipeline);
+            bool value = EditorGUILayout.Toggle("Enable In Pipeline", targetObj.EnableEvent);
+            targetObj.EnableEvent = value;
+            if(value && !targetObj.EnableEvent)
+            {
+                Debug.LogError("The PipelineEvent Attribute has not be writen into this component!");
+            }
             base.OnInspectorGUI();
         }
     }

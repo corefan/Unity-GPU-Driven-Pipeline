@@ -63,10 +63,10 @@ namespace MPipeline
             PostFunctions.RunPostProcess(ref data, taaFunction);
         }
         
-        public override void PreRenderFrame(Camera cam)
+        public override void PreRenderFrame(ref PipelineCommandData data)
         {
-            cam.ResetProjectionMatrix();
-            ConfigureJitteredProjectionMatrix(cam);
+            data.cam.ResetProjectionMatrix();
+            ConfigureJitteredProjectionMatrix(data.cam);
         }
 
         Vector2 GenerateRandomOffset()

@@ -81,10 +81,5 @@ namespace MPipeline
             volumetricTex = new RenderTexture(size.x, size.y, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
             volumetricTex.enableRandomWrite = true;
         }
-
-        public override void PreRenderFrame(Camera cam)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 }

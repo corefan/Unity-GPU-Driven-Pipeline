@@ -15,14 +15,6 @@ namespace MPipeline
             cam.clearFlags = CameraClearFlags.Nothing;
         }
 
-        private void OnPreCull()
-        {
-            if (RenderPipeline.singleton)
-            {
-                RenderPipeline.singleton.BeforePipeline(cam);
-            }
-        }
-
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
         {
             if (RenderPipeline.singleton)

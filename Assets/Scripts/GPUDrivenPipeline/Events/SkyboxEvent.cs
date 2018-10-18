@@ -7,24 +7,11 @@ namespace MPipeline
     public class SkyboxEvent : PipelineEvent
     {
         public Material skyboxMaterial;
-        protected override void Dispose()
-        {
-            
-        }
-
-        protected override void Init(PipelineResources resources)
-        {
-            
-        }
         public override void FrameUpdate(ref PipelineCommandData data)
         {
             Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
             skyboxMaterial.SetPass(0);
             Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
-        }
-        public override void PreRenderFrame(Camera cam)
-        {
-            throw new System.NotImplementedException();
         }
     }
 }

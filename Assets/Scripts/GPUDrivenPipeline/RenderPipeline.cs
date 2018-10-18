@@ -35,9 +35,9 @@ namespace MPipeline
         public static List<PipelineEvent> drawEvents = new List<PipelineEvent>();
         public static List<PipelineEvent> preRenderEvents = new List<PipelineEvent>();
         private List<RenderTexture> temporaryTextures = new List<RenderTexture>(10);
-        private PipelineEvent[] events;
-        public PipelineResources resources;
+        private List<PipelineEvent> allEvents;
         public GameObject eventParent;
+        public PipelineResources resources;
         private void Awake()
         {
             if (singleton)
@@ -50,27 +50,25 @@ namespace MPipeline
             data.targets = RenderTargets.Init();
             InitConst();
             InitScene();
-            LoadAllEvents();
-        }
-
-        public void LoadAllEvents()
-        {
-            events = eventParent.GetComponentsInChildren<PipelineEvent>();
-            foreach (var i in events)
-            {
+            allEvents = new List<PipelineEvent>(eventParent.GetComponentsInChildren<PipelineEvent>());
+            foreach (var i in allEvents)
                 i.InitEvent(resources);
-            }
+        }
+        /// <summary>
+        /// Add and remove Events Manually
+        /// Probably cause unnecessary error, try to avoid calling this methods
+        /// </summary>
+        /// <param name="evt"></param>
+        public void AddEventManually(PipelineEvent evt)
+        {
+            allEvents.Add(evt);
+            evt.InitEvent(resources);
         }
 
-        public void DisposeAllEvents()
+        public void RemoveEventManually(PipelineEvent evt)
         {
-            foreach (var i in events)
-            {
-                i.DisposeEvent();
-            }
-            events = null;
-            drawEvents.Clear();
-            preRenderEvents.Clear();
+            allEvents.Remove(evt);
+            evt.DisposeEvent();
         }
 
         private void OnDestroy()
@@ -78,26 +76,14 @@ namespace MPipeline
             if (singleton != this) return;
             singleton = null;
             DisposeScene();
-            DisposeAllEvents();
-        }
-
-        public void BeforePipeline(Camera cam)
-        {
-            foreach (var i in preRenderEvents)
-            {
-                i.PreRenderFrame(cam);
-            }
-            //Run job system together
-            JobHandle.ScheduleBatchedJobs();
+            foreach (var i in allEvents)
+                i.DisposeEvent();
+            allEvents = null;
         }
 
         public void Render(Camera cam, RenderTexture dest)
         {
             if (!isInitialized) return;
-            PipelineFunctions.InitRenderTarget(ref data.targets, cam, temporaryTextures);
-            //Clear Frame
-            Graphics.SetRenderTarget(data.targets.geometryColorBuffer, data.targets.depthBuffer);
-            GL.Clear(true, true, Color.black);
             //Set Global Data
             data.cam = cam;
             data.resources = resources;
@@ -105,6 +91,17 @@ namespace MPipeline
             ref RenderArray arr = ref data.arrayCollection;
             PipelineFunctions.GetCullingPlanes(ref data.inverseVP, arr.frustumPlanes, arr.farFrustumCorner, arr.nearFrustumCorner);
             //Start Calling Events
+            foreach (var i in preRenderEvents)
+            {
+                i.PreRenderFrame(ref data);
+            }
+            //Run job system together
+            JobHandle.ScheduleBatchedJobs();
+            //Start Prepare Render Targets
+            PipelineFunctions.InitRenderTarget(ref data.targets, cam, temporaryTextures);
+            //Clear Frame
+            Graphics.SetRenderTarget(data.targets.geometryColorBuffer, data.targets.depthBuffer);
+            GL.Clear(true, true, Color.black);
             foreach (var i in drawEvents)
             {
                 i.FrameUpdate(ref data);

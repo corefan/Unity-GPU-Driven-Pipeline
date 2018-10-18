@@ -236,7 +236,7 @@ Shader "Hidden/PostProcessing/TemporalAntialiasing"
 //////////////////TemporalResolver
             half4 currColor = MiddleCenter;
             // Sharpen output
-            half4 corners = 4 * (TopLeft + BottomRight) - 2 * currColor;
+            half4 corners = ((TopLeft + BottomRight + TopRight + BottomLeft) - currColor) * 2;
             currColor += (currColor - (corners * 0.166667)) * 2.718282 * _Sharpness;
             currColor = clamp(currColor, 0, HALF_MAX_MINUS1);
             // HistorySampler

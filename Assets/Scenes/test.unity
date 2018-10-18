@@ -550,6 +550,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
+  m_enableBeforePipeline: 0
   layer: 0
 --- !u!4 &1657096687
 Transform:
@@ -578,6 +579,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
+  m_enableBeforePipeline: 0
   layer: 2000
   hizDepth:
     enableHiz: 0
@@ -597,6 +599,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
+  m_enableBeforePipeline: 0
   layer: 2050
   shader: {fileID: 7200000, guid: be4e5ea3c383b0f4bb8190e40fa77d0a, type: 3}
 --- !u!114 &1657096690
@@ -612,6 +615,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
+  m_enableBeforePipeline: 0
   layer: 2500
   skyboxMaterial: {fileID: 2100000, guid: 87bd98501acd9484197588ce7afd4d19, type: 2}
 --- !u!114 &1657096691
@@ -626,8 +630,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b8eb9fca4b81414b949a9baf9820052, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resources: {fileID: 11400000, guid: 50b544c2017a17d4ca53c689c3b49d03, type: 2}
   eventParent: {fileID: 1657096685}
+  resources: {fileID: 11400000, guid: ff676bd8e36713d49b98c69d61c6ac0e, type: 2}
 --- !u!114 &1657096692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -641,12 +645,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
+  m_enableBeforePipeline: 1
   layer: 3000
   jitterSpread: 1
   sharpness: 0.25
   stationaryBlending: 0.95
   motionBlending: 0.92
-  stationaryAABBScale: 2
+  stationaryAABBScale: 3
   motionAABBScale: 1
 --- !u!114 &1657096693
 MonoBehaviour:
@@ -661,7 +666,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_enabledInPipeline: 1
-  layer: 2600
+  m_enableBeforePipeline: 0
+  layer: 3100
   profile: {fileID: 11400000, guid: 6d0d1a1ad21c9604896988c0fd15fc68, type: 2}
   resources: {fileID: 11400000, guid: d82512f9c8e5d4a4d938b575d47f88d4, type: 2}
 --- !u!1 &2000166144

@@ -90,6 +90,35 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             return ref *(ptr + id);
         }
     }
+
+    public bool ConcurrentAdd(T value)
+    {
+        int last = Interlocked.Increment(ref data->count);
+        //Concurrent Resize
+        if (last <= data->capacity)
+        {
+            last--;
+            T* ptr = (T*)data->ptr;
+            *(ptr + last) = value;
+            return true;
+        }
+        return false;
+    }
+
+    public bool ConcurrentAdd(ref T value)
+    {
+        int last = Interlocked.Increment(ref data->count);
+        //Concurrent Resize
+        if (last <= data->capacity)
+        {
+            last--;
+            T* ptr = (T*)data->ptr;
+            *(ptr + last) = value;
+            return true;
+        }
+        return false;
+    }
+
     public int ConcurrentAdd(T value, object lockerObj)
     {
         int last = Interlocked.Increment(ref data->count);
@@ -110,7 +139,6 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             }
         }
         last--;
-        Resize();
         T* ptr = (T*)data->ptr;
         *(ptr + last) = value;
         return last;
@@ -135,7 +163,6 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             }
         }
         last--;
-        Resize();
         T* ptr = (T*)data->ptr;
         *(ptr + last) = value;
         return last;

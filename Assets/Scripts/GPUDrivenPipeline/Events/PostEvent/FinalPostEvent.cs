@@ -77,9 +77,5 @@ namespace MPipeline
             PostFunctions.RunPostProcess(ref data, uberAction);
             PipelineFunctions.ReleaseRenderTarget(sharedData.temporalRT);
         }
-        public override void PreRenderFrame(Camera cam)
-        {
-            throw new System.NotImplementedException();
-        }
     }
 }

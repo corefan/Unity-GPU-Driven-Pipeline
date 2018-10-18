@@ -9,7 +9,16 @@ public unsafe class Test : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
-        Debug.Log("Awake");
+        var obj = FindObjectsOfType<GameObject>() as GameObject[];
+        foreach(var i in obj)
+        {
+            Debug.Log(i.name);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log("Destry");
     }
 }
 

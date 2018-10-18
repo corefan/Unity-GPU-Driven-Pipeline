@@ -37,10 +37,6 @@ namespace MPipeline
             PipelineFunctions.RunCullDispatching(ref baseBuffer, gpuFrustumShader, kernel, data.cam.orthographic);
             PipelineFunctions.RenderProceduralCommand(ref baseBuffer, proceduralMaterial);
         }
-        public override void PreRenderFrame(Camera cam)
-        {
-            throw new System.NotImplementedException();
-        }
     }
     [System.Serializable]
     public unsafe struct HizDepth
