@@ -116,6 +116,7 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
             *(ptr + last) = value;
             return true;
         }
+
         return false;
     }
 

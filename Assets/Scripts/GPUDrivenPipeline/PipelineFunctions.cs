@@ -177,7 +177,7 @@ public unsafe static class PipelineFunctions
         shadMap.frustumCorners[7] = targetCamera.ViewportToWorldPoint(new Vector3(1, 1, distance.y));
     }
 
-    public static bool FrustumCulling(ref Matrix4x4 ObjectToWorld, ref Vector3 extent, Plane* frustumPlanes)
+    public static bool FrustumCulling(ref Matrix4x4 ObjectToWorld, Vector3 extent, Vector4* frustumPlanes)
     {
         Vector3 right = new Vector3(ObjectToWorld.m00, ObjectToWorld.m10, ObjectToWorld.m20);
         Vector3 up = new Vector3(ObjectToWorld.m01, ObjectToWorld.m11, ObjectToWorld.m21);
@@ -185,11 +185,13 @@ public unsafe static class PipelineFunctions
         Vector3 position = new Vector3(ObjectToWorld.m03, ObjectToWorld.m13, ObjectToWorld.m23);
         for (int i = 0; i < 6; ++i)
         {
-            Plane plane = frustumPlanes[i];
-            float r = Vector3.Dot(position, plane.normal);
-            Vector3 absNormal = new Vector3(Mathf.Abs(Vector3.Dot(plane.normal, right)), Mathf.Abs(Vector3.Dot(plane.normal, up)), Mathf.Abs(Vector3.Dot(plane.normal, forward)));
+            ref Vector4 plane = ref frustumPlanes[i];
+            Vector3 normal = new Vector3(plane.x, plane.y, plane.z);
+            float distance = plane.w;
+            float r = Vector3.Dot(position, normal);
+            Vector3 absNormal = new Vector3(Mathf.Abs(Vector3.Dot(normal, right)), Mathf.Abs(Vector3.Dot(normal, up)), Mathf.Abs(Vector3.Dot(normal, forward)));
             float f = Vector3.Dot(absNormal, extent);
-            if ((r - f) >= -plane.distance)
+            if ((r - f) >= -distance)
                 return false;
         }
         return true;

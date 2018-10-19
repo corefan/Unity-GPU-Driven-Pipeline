@@ -9,6 +9,7 @@ public unsafe class Test : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+       
         var obj = FindObjectsOfType<GameObject>() as GameObject[];
         foreach(var i in obj)
         {

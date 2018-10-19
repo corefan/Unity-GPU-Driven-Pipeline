@@ -8,20 +8,13 @@ namespace MPipeline
         #region STATIC_AREA
         public static RenderPipeline singleton;
         public static PipelineCommandData data;
-        private static bool isConstInitialize = false;
         private static bool isInitialized = false;
-        public static void InitConst()
-        {
-            if (isConstInitialize)
-                return;
-            isConstInitialize = true;
-            data.arrayCollection = new RenderArray(true);
-        }
         //Initialized In Every Scene
         public void InitScene()
         {
             if (isInitialized) return;
             isInitialized = true;
+            data.arrayCollection = new RenderArray(true);
             PipelineFunctions.InitBaseBuffer(ref data.baseBuffer);
         }
         public void DisposeScene()
@@ -48,7 +41,6 @@ namespace MPipeline
             }
             singleton = this;
             data.targets = RenderTargets.Init();
-            InitConst();
             InitScene();
             allEvents = new List<PipelineEvent>(eventParent.GetComponentsInChildren<PipelineEvent>());
             foreach (var i in allEvents)

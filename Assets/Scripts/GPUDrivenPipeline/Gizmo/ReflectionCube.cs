@@ -11,14 +11,15 @@ namespace MPipeline
         public bool useBoxProjection = false;
         public Cubemap reflectionCube;
         private int currentIndex;
-        #region PRIVATE
-        private void Awake()
+        public Matrix4x4 localToWorld;
+        private void OnEnable()
         {
             currentIndex = allCubes.Count;
             allCubes.Add(this);
+            localToWorld = transform.localToWorldMatrix;
         }
 
-        private void OnDestroy()
+        private void OnDisable()
         {
             if (allCubes.Count <= 1)
             {
@@ -41,12 +42,6 @@ namespace MPipeline
         {
             Gizmos.DrawWireMesh(GraphicsUtility.cubeMesh, transform.position, transform.rotation, transform.localScale);
         }
-        #endregion
-        #region PUBLIC
-        public void DrawCurrent()
-        {
 
-        }
-        #endregion
     }
 }
