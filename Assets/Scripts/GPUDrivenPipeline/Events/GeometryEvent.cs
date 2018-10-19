@@ -67,8 +67,8 @@ namespace MPipeline
             instanceCountBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
             verticesBuffer = new ComputeBuffer(36, 16);
             const int depthRes = 256;
-            depthMipTexture = new RenderTexture(depthRes, depthRes, 16, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
-            backupMip = new RenderTexture(depthRes, depthRes, 0, RenderTextureFormat.RFloat, RenderTextureReadWrite.Linear);
+            depthMipTexture = new RenderTexture(depthRes, depthRes, 16, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+            backupMip = new RenderTexture(depthRes, depthRes, 0, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
             backupMip.useMipMap = true;
             backupMip.autoGenerateMips = false;
             Mesh occluderMesh = resources.occluderMesh;
