@@ -25,9 +25,10 @@ public static partial class ShaderIDs
     public static readonly int resultBuffer = Shader.PropertyToID("resultBuffer");
     public static readonly int verticesBuffer = Shader.PropertyToID("verticesBuffer");
     public static readonly int _NormalBiases = Shader.PropertyToID("_NormalBiases");
-    public static readonly int weightsBuffer = Shader.PropertyToID("weightsBuffer");
-    public static readonly int allVerticesBuffer = Shader.PropertyToID("allVerticesBuffer");
-    public static readonly int boneBuffers = Shader.PropertyToID("boneBuffers");
+    public static readonly int dispatchBuffer = Shader.PropertyToID("dispatchBuffer");
+    public static readonly int reCheckResult = Shader.PropertyToID("reCheckResult");
+    public static readonly int reCheckCount = Shader.PropertyToID("reCheckCount");
+
     public static readonly int _FarClipCorner = Shader.PropertyToID("_FarClipCorner");
     public static readonly int _Jitter = Shader.PropertyToID("_Jitter");
     public static readonly int _Sharpness = Shader.PropertyToID("_Sharpness");
@@ -45,6 +46,9 @@ public static partial class ShaderIDs
     public static readonly int _HizDepthTex = Shader.PropertyToID("_HizDepthTex");
     public static readonly int _CameraUpVector = Shader.PropertyToID("_CameraUpVector");
     public static readonly int _VP = Shader.PropertyToID("_VP");
+    public static readonly int _InvLastVP = Shader.PropertyToID("_InvLastVP");
+    public static readonly int _Depth = Shader.PropertyToID("_Depth");
+    public static readonly int _LastDepth = Shader.PropertyToID("_LastDepth");
     public static readonly int _NonJitterVP = Shader.PropertyToID("_NonJitterVP");
 
     public static readonly int _Lut3D = Shader.PropertyToID("_Lut3D");

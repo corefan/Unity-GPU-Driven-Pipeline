@@ -63,10 +63,10 @@ namespace MPipeline
             allSettings.Clear();
         }
 
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
             sharedData.autoExposureTexture = RuntimeUtilities.whiteTexture;
-            sharedData.screenSize = new Vector2Int(data.cam.pixelWidth, data.cam.pixelHeight);
+            sharedData.screenSize = new Vector2Int(cam.cam.pixelWidth, cam.cam.pixelHeight);
             sharedData.uberMaterial.SetTexture(PostProcessing.ShaderIDs.AutoExposureTex, sharedData.autoExposureTexture);
             renderAction(ref data);
             if (sharedData.keywordsTransformed)
@@ -74,7 +74,7 @@ namespace MPipeline
                 sharedData.keywordsTransformed = false;
                 sharedData.uberMaterial.shaderKeywords = sharedData.shaderKeywords.ToArray();
             }
-            PostFunctions.RunPostProcess(ref data, uberAction);
+            PostFunctions.RunPostProcess(ref cam.targets, ref data, uberAction);
             PipelineFunctions.ReleaseRenderTarget(sharedData.temporalRT);
         }
     }

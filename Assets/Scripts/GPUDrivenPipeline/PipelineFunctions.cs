@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 using System;
 using System.Text;
+using MPipeline;
 
 public unsafe static class PipelineFunctions
 {
@@ -144,7 +145,11 @@ public unsafe static class PipelineFunctions
         baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ClusterMeshData.SIZE);
         baseBuffer.clusterBuffer.SetData(allInfos);
         baseBuffer.resultBuffer = new ComputeBuffer(allInfos.Length, PipelineBaseBuffer.UINTSIZE);
-        baseBuffer.instanceCountBuffer = new ComputeBuffer(1, PipelineBaseBuffer.INDIRECTSIZE, ComputeBufferType.IndirectArguments);
+        baseBuffer.instanceCountBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
+        NativeArray<uint> instanceCountBufferValue = new NativeArray<uint>(5, Allocator.Temp);
+        instanceCountBufferValue[0] = PipelineBaseBuffer.CLUSTERVERTEXCOUNT;
+        baseBuffer.instanceCountBuffer.SetData(instanceCountBufferValue);
+        instanceCountBufferValue.Dispose();
         baseBuffer.verticesBuffer = new ComputeBuffer(allPoints.Length, Point.SIZE);
         baseBuffer.verticesBuffer.SetData(allPoints);
         baseBuffer.clusterCount = allInfos.Length;
@@ -288,28 +293,34 @@ public unsafe static class PipelineFunctions
         compute.SetBuffer(kernel, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
     }
 
-    public static void SetHizOccBuffer(ref PipelineCommandData data, RenderTexture hizDepth, ComputeShader shader, int kernel)
+    public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer, Material mat)
     {
-        shader.SetTexture(kernel, ShaderIDs._HizDepthTex, hizDepth);
-        shader.SetVector(ShaderIDs._CameraUpVector, data.cam.transform.up);
-        shader.SetMatrix(ShaderIDs._VP, data.vp);
+        mat.SetBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
+        mat.SetBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
     }
 
-    public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer)
+    public static void DrawLastFrameCullResult(
+        ref PipelineBaseBuffer baseBuffer,
+        ref OcclusionBuffers occBuffer,
+        Material indirectMaterial)
     {
-        Shader.SetGlobalBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
-        Shader.SetGlobalBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
+        indirectMaterial.SetBuffer(ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
+        indirectMaterial.SetBuffer(ShaderIDs.verticesBuffer, baseBuffer.verticesBuffer);
+        indirectMaterial.SetPass(0);
+        Graphics.DrawProceduralIndirect(MeshTopology.Triangles, baseBuffer.instanceCountBuffer);
     }
 
-    public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer, CommandBuffer geometry)
+    public static void DrawRecheckCullResult(
+        ref OcclusionBuffers occBuffer,
+        Material indirectMaterial)
     {
-        geometry.SetGlobalBuffer(ShaderIDs.verticesBuffer, basebuffer.verticesBuffer);
-        geometry.SetGlobalBuffer(ShaderIDs.resultBuffer, basebuffer.resultBuffer);
+        indirectMaterial.SetPass(0);
+        Graphics.DrawProceduralIndirect(MeshTopology.Triangles, occBuffer.reCheckCount);
     }
+
     public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, int kernel, bool isOrtho)
     {
         computeShader.SetInt(ShaderIDs._CullingPlaneCount, isOrtho ? 6 : 5);
-        computeShader.Dispatch(1, 1, 1, 1);
         ComputeShaderUtility.Dispatch(computeShader, kernel, baseBuffer.clusterCount, 64);
     }
     public static void RenderProceduralCommand(ref PipelineBaseBuffer buffer, Material material)
@@ -343,6 +354,7 @@ public unsafe static class PipelineFunctions
         clipDistances[2] = settings.secondLevelDistance;
         clipDistances[3] = settings.thirdLevelDistance;
         clipDistances[4] = settings.farestDistance;
+        SetShaderBuffer(ref baseBuffer, shadMap.shadowDepthMaterial);
         for (int pass = 0; pass < CASCADELEVELCOUNT; ++pass)
         {
             Vector2 farClipDistance = new Vector2(clipDistances[pass], clipDistances[pass + 1]);
@@ -356,6 +368,7 @@ public unsafe static class PipelineFunctions
             float* biasList = (float*)UnsafeUtility.AddressOf(ref settings.bias);
             UpdateCascadeState(ref shadMap, biasList[pass] / currentCam.farClipPlane, pass);
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, baseBuffer.instanceCountBuffer);
+            gpuFrustumShader.Dispatch(1, 1, 1, 1);
         }
         UnsafeUtility.Free(clipDistances, Allocator.Temp);
     }
@@ -474,5 +487,82 @@ public unsafe static class PipelineFunctions
                 }
             }
         }
+    }
+    public static void InitOcclusionBuffer(ref OcclusionBuffers buffers)
+    {
+        buffers.dispatchBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
+        NativeArray<uint> occludedCountList = new NativeArray<uint>(5, Allocator.Temp, NativeArrayOptions.ClearMemory);
+        occludedCountList[0] = 0;
+        occludedCountList[1] = 1;
+        occludedCountList[2] = 1;
+        occludedCountList[3] = 0;
+        occludedCountList[4] = 0;
+        buffers.dispatchBuffer.SetData(occludedCountList);
+        buffers.reCheckCount = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
+        occludedCountList[0] = PipelineBaseBuffer.CLUSTERVERTEXCOUNT;
+        occludedCountList[1] = 0;
+        occludedCountList[2] = 0;
+        buffers.reCheckCount.SetData(occludedCountList);
+        occludedCountList.Dispose();
+    }
+    public static void DisposeOcclusionBuffer(ref OcclusionBuffers buffers)
+    {
+        buffers.dispatchBuffer.Dispose();
+        buffers.reCheckCount.Dispose();
+        if(buffers.reCheckResult != null)
+            buffers.reCheckResult.Dispose();
+    }
+    public static void UpdateOcclusionBuffer(
+        ref PipelineBaseBuffer basebuffer
+        , ComputeShader coreShader
+        , ref OcclusionBuffers buffers
+        , HizOcclusionData occlusionData
+        , Vector4[] frustumCullingPlanes
+        , bool isOrtho, int clusterCount)
+    {
+        if (buffers.reCheckResult != null && buffers.reCheckResult.count != clusterCount)
+        {
+            buffers.reCheckResult.Dispose();
+            buffers.reCheckResult = null;
+        }
+        if (buffers.reCheckResult == null)
+        {
+            buffers.reCheckResult = new ComputeBuffer(clusterCount, 4);
+        }
+        coreShader.SetInt(ShaderIDs._CullingPlaneCount, isOrtho ? 6 : 5);
+        coreShader.SetVectorArray(ShaderIDs.planes, frustumCullingPlanes);
+        coreShader.SetVector(ShaderIDs._CameraUpVector, occlusionData.lastFrameCameraUp);
+        coreShader.SetBuffer(OcclusionBuffers.FrustumFilter, ShaderIDs.clusterBuffer, basebuffer.clusterBuffer);
+        coreShader.SetTexture(OcclusionBuffers.FrustumFilter, ShaderIDs._HizDepthTex, occlusionData.historyDepth);
+        coreShader.SetBuffer(OcclusionBuffers.FrustumFilter, ShaderIDs.dispatchBuffer, buffers.dispatchBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.FrustumFilter, ShaderIDs.resultBuffer, basebuffer.resultBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.FrustumFilter, ShaderIDs.instanceCountBuffer, basebuffer.instanceCountBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.FrustumFilter, ShaderIDs.reCheckResult, buffers.reCheckResult);
+        ComputeShaderUtility.Dispatch(coreShader, OcclusionBuffers.FrustumFilter, basebuffer.clusterCount, 64);
+    }
+    public static void ClearOcclusionData(
+        ref PipelineBaseBuffer baseBuffer
+        , ref OcclusionBuffers buffers
+        , ComputeShader coreShader)
+    {
+        coreShader.SetBuffer(OcclusionBuffers.ClearOcclusionData, ShaderIDs.dispatchBuffer, buffers.dispatchBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.ClearOcclusionData, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.ClearOcclusionData, ShaderIDs.reCheckCount, buffers.reCheckCount);
+        coreShader.Dispatch(OcclusionBuffers.ClearOcclusionData, 1, 1, 1);
+    }
+    public static void OcclusionRecheck(
+        ref PipelineBaseBuffer baseBuffer
+        , ref OcclusionBuffers buffers
+        , ComputeShader coreShader
+        , HizOcclusionData hizData)
+    {
+        coreShader.SetVector(ShaderIDs._CameraUpVector, hizData.lastFrameCameraUp);
+        coreShader.SetBuffer(OcclusionBuffers.OcclusionRecheck, ShaderIDs.dispatchBuffer, buffers.dispatchBuffer);
+        coreShader.SetBuffer(OcclusionBuffers.OcclusionRecheck, ShaderIDs.reCheckResult, buffers.reCheckResult);
+        coreShader.SetBuffer(OcclusionBuffers.OcclusionRecheck, ShaderIDs.clusterBuffer, baseBuffer.clusterBuffer);
+        coreShader.SetTexture(OcclusionBuffers.OcclusionRecheck, ShaderIDs._HizDepthTex, hizData.historyDepth);
+        coreShader.SetBuffer(OcclusionBuffers.OcclusionRecheck, ShaderIDs.reCheckCount, buffers.reCheckCount);
+        coreShader.SetBuffer(OcclusionBuffers.OcclusionRecheck, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
+        coreShader.DispatchIndirect(OcclusionBuffers.OcclusionRecheck, buffers.dispatchBuffer);
     }
 }

@@ -25,16 +25,16 @@ namespace MPipeline
             Destroy(reflectMaterial);
         }
 
-        public override void PreRenderFrame(ref PipelineCommandData data)
+        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
         {
             cullJob.planes = (Vector4*)UnsafeUtility.PinGCArrayAndGetDataAddress(data.arrayCollection.frustumPlanes, out gcHandler);
             cullJob.resultIndices = new NativeList<int>(ReflectionCube.allCubes.Count, Allocator.Temp);
             cullJobHandler = cullJob.Schedule(ReflectionCube.allCubes.Count, 32);
         }
 
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
+            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
             cullJobHandler.Complete();
             UnsafeUtility.ReleaseGCObject(gcHandler);
             //Use Result Indices

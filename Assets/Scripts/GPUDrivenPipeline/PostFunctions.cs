@@ -27,14 +27,14 @@ namespace MPipeline
             data.keywordsTransformed = true;
         }
 
-        public static void RunPostProcess(ref PipelineCommandData data, PostProcessAction renderFunc)
+        public static void RunPostProcess(ref RenderTargets targets, ref PipelineCommandData data, PostProcessAction renderFunc)
         {
-            RenderTexture source = data.targets.renderTarget;
-            RenderTexture dest = data.targets.backupTarget;
+            RenderTexture source = targets.renderTarget;
+            RenderTexture dest = targets.backupTarget;
             renderFunc(ref data, source, dest);
-            data.targets.renderTarget = dest;
-            data.targets.backupTarget = source;
-            data.targets.colorBuffer = dest.colorBuffer;
+            targets.renderTarget = dest;
+            targets.backupTarget = source;
+            targets.colorBuffer = dest.colorBuffer;
         }
 
         public static void BlitFullScreen(RenderTexture source, RenderTexture dest, Material mat, int pass)

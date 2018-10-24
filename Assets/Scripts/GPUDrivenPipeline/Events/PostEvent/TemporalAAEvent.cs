@@ -32,25 +32,19 @@ namespace MPipeline
         private int sampleIndex = 0;
         private const int k_SampleCount = 8;
         private Material taaMat;
-        private RenderTexture historyTex;
         private PostProcessAction taaFunction;
+        private RenderTexture historyTex;
+        private Camera currentCamera;
+        private System.Func<HistoryTexture> GetHistoryTex;
         protected override void Init(PipelineResources resources)
         {
             taaMat = new Material(resources.taaShader);
             taaFunction = (ref PipelineCommandData data, RenderTexture source, RenderTexture dest) =>
             {
-                SetHistory(data.cam, data.targets.renderTarget);
-                //TAA Start
-                const float kMotionAmplification_Blending = 100f * 60f;
-                const float kMotionAmplification_Bounding = 100f * 30f;
-                taaMat.SetVector(ShaderIDs._Jitter, jitter);
-                taaMat.SetFloat(ShaderIDs._Sharpness, sharpness);
-                taaMat.SetVector(ShaderIDs._TemporalClipBounding, new Vector4(stationaryAABBScale, motionAABBScale, kMotionAmplification_Bounding, 0f));
-                taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification_Blending, 0f));
-                taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
                 taaMat.Blit(source, dest, 0);
                 Graphics.Blit(dest, historyTex);
             };
+            GetHistoryTex = () => new HistoryTexture(currentCamera);
         }
 
         protected override void Dispose()
@@ -58,15 +52,28 @@ namespace MPipeline
             Destroy(taaMat);
         }
 
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            PostFunctions.RunPostProcess(ref data, taaFunction);
+            currentCamera = cam.cam;
+            HistoryTexture texComponent = IPerCameraData.GetProperty(this, cam, GetHistoryTex) as HistoryTexture;
+            texComponent.UpdateProperty(cam);
+            SetHistory(cam.cam, ref texComponent.historyTex, cam.targets.renderTarget);
+            historyTex = texComponent.historyTex;
+            //TAA Start
+            const float kMotionAmplification_Blending = 100f * 60f;
+            const float kMotionAmplification_Bounding = 100f * 30f;
+            taaMat.SetVector(ShaderIDs._Jitter, jitter);
+            taaMat.SetFloat(ShaderIDs._Sharpness, sharpness);
+            taaMat.SetVector(ShaderIDs._TemporalClipBounding, new Vector4(stationaryAABBScale, motionAABBScale, kMotionAmplification_Bounding, 0f));
+            taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification_Blending, 0f));
+            taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
+            PostFunctions.RunPostProcess(ref cam.targets, ref data, taaFunction);
         }
         
-        public override void PreRenderFrame(ref PipelineCommandData data)
+        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
         {
-            data.cam.ResetProjectionMatrix();
-            ConfigureJitteredProjectionMatrix(data.cam);
+            cam.cam.ResetProjectionMatrix();
+            ConfigureJitteredProjectionMatrix(cam.cam);
         }
 
         Vector2 GenerateRandomOffset()
@@ -101,21 +108,47 @@ namespace MPipeline
             camera.useJitteredProjectionMatrixForTransparentRendering = false;
         }
 
-        public void SetHistory(Camera cam, RenderTexture renderTarget)
+        public void SetHistory(Camera cam, ref RenderTexture history, RenderTexture renderTarget)
         {
-            if (historyTex == null)
+            if (history == null)
             {
-                historyTex = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
-                historyTex.filterMode = FilterMode.Bilinear;
-                Graphics.Blit(renderTarget, historyTex);
+                history = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+                history.filterMode = FilterMode.Bilinear;
+                Graphics.Blit(renderTarget, history);
             }
-            else if (historyTex.width != cam.pixelWidth || historyTex.height != cam.pixelHeight)
+            else if (history.width != cam.pixelWidth || history.height != cam.pixelHeight)
+            {
+                history.Release();
+                Destroy(history);
+                history = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+                history.filterMode = FilterMode.Bilinear;
+                Graphics.Blit(renderTarget, history);
+            }
+        }
+    }
+
+    public class HistoryTexture : IPerCameraData
+    {
+        public RenderTexture historyTex;
+        public HistoryTexture(Camera cam)
+        {
+            historyTex = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+        }
+
+        public override void DisposeProperty()
+        {
+            historyTex.Release();
+            Object.Destroy(historyTex);
+        }
+        public void UpdateProperty(PipelineCamera camera)
+        {
+            int camWidth = camera.cam.pixelWidth;
+            int camHeight = camera.cam.pixelHeight;
+            if(historyTex.width != camWidth || historyTex.height != camHeight)
             {
                 historyTex.Release();
-                Destroy(historyTex);
-                historyTex = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
-                historyTex.filterMode = FilterMode.Bilinear;
-                Graphics.Blit(renderTarget, historyTex);
+                Object.Destroy(historyTex);
+                historyTex = new RenderTexture(camWidth, camHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
             }
         }
     }

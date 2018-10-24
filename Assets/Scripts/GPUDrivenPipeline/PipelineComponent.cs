@@ -29,20 +29,19 @@ public struct PipelineBaseBuffer
         /// Cluster cull with frustum & occlusion culling
         /// </summary>
         public const int ClusterCullOccKernel = 2;
-        /// <summary>
-        /// Object Culling with frustum culling
-        /// </summary>
-        public const int ObjectCullKernel = 3;
-        /// <summary>
-        /// Prepare Dispatch Indirect kernel
-        /// </summary>
-        public const int PrepareDispatchKernel = 4;
-        /// <summary>
-        /// Clear Dispatch kernel
-        /// </summary>
-        public const int ClearDispatchKernel = 5;
     }
 }
+
+public struct OcclusionBuffers
+{
+    public ComputeBuffer reCheckCount;
+    public ComputeBuffer reCheckResult;
+    public ComputeBuffer dispatchBuffer;
+    public const int FrustumFilter = 2;
+    public const int OcclusionRecheck = 3;
+    public const int ClearOcclusionData = 4;
+}
+
 
 public struct AspectInfo
 {
@@ -273,14 +272,24 @@ public struct RenderTargets
         rt.backupTarget = null;
         return rt;
     }
+    public RenderTexture depthTexture
+    {
+        get { return gbufferTextures[5]; }
+    }
+    public RenderTexture motionVectorTexture
+    {
+        get { return gbufferTextures[4]; }
+    }
+    public RenderTexture normalTexture
+    {
+        get { return gbufferTextures[2]; }
+    }
 }
 
 public struct PipelineCommandData
 {
-    public RenderTargets targets;
     public Matrix4x4 vp;
     public Matrix4x4 inverseVP;
-    public Camera cam;
     public PipelineBaseBuffer baseBuffer;
     public RenderArray arrayCollection;
     public MPipeline.PipelineResources resources;

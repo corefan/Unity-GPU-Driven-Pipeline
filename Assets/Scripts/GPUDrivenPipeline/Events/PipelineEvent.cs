@@ -131,7 +131,7 @@ namespace MPipeline
         }
         protected virtual void Init(PipelineResources resources) { }
         protected virtual void Dispose() { }
-        public virtual void FrameUpdate(ref PipelineCommandData data) { }
-        public virtual void PreRenderFrame(ref PipelineCommandData data) { }
+        public virtual void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data) { }
+        public virtual void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data) { }
     }
 }

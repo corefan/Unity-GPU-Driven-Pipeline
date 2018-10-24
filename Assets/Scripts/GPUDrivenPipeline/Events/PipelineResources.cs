@@ -8,6 +8,7 @@ namespace MPipeline
         public ComputeShader occluderCulling;
         public ComputeShader gpuFrustumCulling;
         public ComputeShader skinCulling;
+        public ComputeShader temporalHizCompute;
         public Shader taaShader;
         public Shader indirectDepthShader;
         public Shader HizLodShader;
@@ -15,6 +16,7 @@ namespace MPipeline
         public Shader motionVectorShader;
         public Shader shadowMaskShader;
         public Shader reflectionShader;
+        public Shader linearDepthShader;
         public Mesh occluderMesh;
     }
 }

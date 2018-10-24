@@ -32,13 +32,13 @@ namespace MPipeline
             volumetricTex = null;
         }
 
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
             if (SunLight.current == null) return;
             int pass;
             if (SunLight.current.enableShadow)
             {
-                PipelineFunctions.DrawShadow(data.cam, data.resources.gpuFrustumCulling, ref data.arrayCollection, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
+                PipelineFunctions.DrawShadow(cam.cam, data.resources.gpuFrustumCulling, ref data.arrayCollection, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
                 PipelineFunctions.UpdateShadowMaskState(shadMaskMaterial, ref SunLight.shadMap, cascadeShadowMapVP);
                 /*   CheckTex(data.cam);
                    Graphics.SetRenderTarget(volumetricTex);
@@ -52,7 +52,7 @@ namespace MPipeline
             {
                 pass = 1;
             }
-            Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
+            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
             Shader.SetGlobalVector(ShaderIDs._LightPos, -SunLight.shadMap.shadCam.forward);
             shadMaskMaterial.SetPass(pass);
             Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);

@@ -31,9 +31,9 @@ namespace MPipeline.Light
             indirectSpotBuffer.Dispose();
         }
         const float angleToReg = (float)(3.1415926536 / 360.0);
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
+            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
             foreach (var i in mSpotlights)
             {
                 Vector4 color = i.lightColor * i.intensity;

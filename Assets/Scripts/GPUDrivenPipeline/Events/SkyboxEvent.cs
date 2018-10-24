@@ -7,9 +7,9 @@ namespace MPipeline
     public class SkyboxEvent : PipelineEvent
     {
         public Material skyboxMaterial;
-        public override void FrameUpdate(ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera camera, ref PipelineCommandData data)
         {
-            Graphics.SetRenderTarget(data.targets.colorBuffer, data.targets.depthBuffer);
+            Graphics.SetRenderTarget(camera.targets.colorBuffer, camera.targets.depthBuffer);
             skyboxMaterial.SetPass(0);
             Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
         }

@@ -27,7 +27,6 @@ namespace MPipeline
         // private Camera currentCam;
         public static List<PipelineEvent> drawEvents = new List<PipelineEvent>();
         public static List<PipelineEvent> preRenderEvents = new List<PipelineEvent>();
-        private List<RenderTexture> temporaryTextures = new List<RenderTexture>(10);
         private List<PipelineEvent> allEvents;
         public GameObject eventParent;
         public PipelineResources resources;
@@ -40,7 +39,6 @@ namespace MPipeline
                 return;
             }
             singleton = this;
-            data.targets = RenderTargets.Init();
             InitScene();
             allEvents = new List<PipelineEvent>(eventParent.GetComponentsInChildren<PipelineEvent>());
             foreach (var i in allEvents)
@@ -73,11 +71,11 @@ namespace MPipeline
             allEvents = null;
         }
 
-        public void Render(Camera cam, RenderTexture dest)
+        public void Render(PipelineCamera pipelineCam, RenderTexture dest)
         {
             if (!isInitialized) return;
             //Set Global Data
-            data.cam = cam;
+            Camera cam = pipelineCam.cam;
             data.resources = resources;
             PipelineFunctions.GetViewProjectMatrix(cam, out data.vp, out data.inverseVP);
             ref RenderArray arr = ref data.arrayCollection;
@@ -85,22 +83,19 @@ namespace MPipeline
             //Start Calling Events
             foreach (var i in preRenderEvents)
             {
-                i.PreRenderFrame(ref data);
+                i.PreRenderFrame(pipelineCam, ref data);
             }
             //Run job system together
             JobHandle.ScheduleBatchedJobs();
             //Start Prepare Render Targets
-            PipelineFunctions.InitRenderTarget(ref data.targets, cam, temporaryTextures);
-            //Clear Frame
-            Graphics.SetRenderTarget(data.targets.geometryColorBuffer, data.targets.depthBuffer);
-            GL.Clear(true, true, Color.black);
+            
             foreach (var i in drawEvents)
             {
-                i.FrameUpdate(ref data);
+                i.FrameUpdate(pipelineCam, ref data);
             }
             //Finalize Frame
-            Graphics.Blit(data.targets.renderTarget, dest);
-            PipelineFunctions.ReleaseRenderTarget(temporaryTextures);
+            Graphics.Blit(pipelineCam.targets.renderTarget, dest);
+
         }
     }
 }
