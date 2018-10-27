@@ -50,6 +50,16 @@ static const float3 extentArray[8] =
     float3(-1,-1,-1)
 };
 
+static const float3 aggressiveExtentArray[6] =
+{
+    float3(0, 1, 0),
+    float3(0, -1, 0),
+    float3(1, 0, 0),
+    float3(-1, 0, 0),
+    float3(0, 0, 1),
+    float3(0, 0, -1)
+};
+
 float OcclusionTest(ClusterMeshData info, float4x4 vpMat)
 {
     float3 farPoint = info.position + length(info.extent) * _CameraUpVector;
@@ -60,9 +70,9 @@ float OcclusionTest(ClusterMeshData info, float4x4 vpMat)
     float screenDist = distance(farClipPos.xy, centerClipPos.xy);
     float lodLevel = clamp(log2(screenDist * 128), 0, 7.4);
     [unroll]
-    for(uint i = 0; i < 8; ++i)
+    for(uint i = 0; i < 6; ++i)
     {
-        float3 worldPoint = info.position + info.extent * extentArray[i];
+        float3 worldPoint = info.position + info.extent * aggressiveExtentArray[i];
         float4 clipPos = mul(vpMat, float4(worldPoint, 1));
         clipPos /= clipPos.w;
         float2 uv = clipPos.xy;

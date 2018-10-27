@@ -34,8 +34,7 @@ namespace MPipeline
         private Material taaMat;
         private PostProcessAction taaFunction;
         private RenderTexture historyTex;
-        private Camera currentCamera;
-        private System.Func<HistoryTexture> GetHistoryTex;
+        private System.Func<PipelineCamera, HistoryTexture> GetHistoryTex = (cam) => new HistoryTexture(cam.cam);
         protected override void Init(PipelineResources resources)
         {
             taaMat = new Material(resources.taaShader);
@@ -44,7 +43,6 @@ namespace MPipeline
                 taaMat.Blit(source, dest, 0);
                 Graphics.Blit(dest, historyTex);
             };
-            GetHistoryTex = () => new HistoryTexture(currentCamera);
         }
 
         protected override void Dispose()
@@ -54,7 +52,6 @@ namespace MPipeline
 
         public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            currentCamera = cam.cam;
             HistoryTexture texComponent = IPerCameraData.GetProperty(this, cam, GetHistoryTex) as HistoryTexture;
             texComponent.UpdateProperty(cam);
             SetHistory(cam.cam, ref texComponent.historyTex, cam.targets.renderTarget);
