@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dbd0823b00f58a4caf0bda5f81b5c91, type: 3}
   m_Name: DefaultResources
   m_EditorClassIdentifier: 
-  occluderCulling: {fileID: 7200000, guid: b01b6fb21a1d92f47b9c3593a496d069, type: 3}
   gpuFrustumCulling: {fileID: 7200000, guid: 27a4a69f28f2cb946a2de4928422fcd8, type: 3}
   skinCulling: {fileID: 7200000, guid: 1adff947a70ac5a45a170dab2f5737d1, type: 3}
   temporalHizCompute: {fileID: 7200000, guid: 1339df483f678874295cd16b7fbf5d38, type: 3}
@@ -24,4 +23,6 @@ MonoBehaviour:
   shadowMaskShader: {fileID: 4800000, guid: 59587a2c9dce614429a67657b3058d89, type: 3}
   reflectionShader: {fileID: 4800000, guid: 570f61f4159173a449116b777a6d5480, type: 3}
   linearDepthShader: {fileID: 4800000, guid: 77485821d74bdd841b30cd6723eff35e, type: 3}
+  pointLightShader: {fileID: 4800000, guid: 63808577f167c0f48965284bec7283ab, type: 3}
   occluderMesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  sphereMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}

@@ -55,4 +55,9 @@ public static partial class ShaderIDs
     public static readonly int _Lut3D_Params = Shader.PropertyToID("_Lut3D_Params");
     public static readonly int _PostExposure = Shader.PropertyToID("_PostExposure");
     public static readonly int _TemporalClipBounding = Shader.PropertyToID("_TemporalClipBounding");
+
+    public static readonly int _LightRange = Shader.PropertyToID("_LightRange");
+    public static readonly int _LightIntensity = Shader.PropertyToID("_LightIntensity");
+    public static readonly int _LightPosition = Shader.PropertyToID("_LightPosition");
+    public static readonly int _LightColor = Shader.PropertyToID("_LightColor");
 }

@@ -202,6 +202,18 @@ public unsafe static class PipelineFunctions
         return true;
     }
 
+    public static bool FrustumCulling(Vector3 position, float range, Vector4* frustumPlanes)
+    {
+        for(int i = 0; i < 6; ++i)
+        {
+            ref Vector4 plane = ref frustumPlanes[i];
+            Vector3 normal = new Vector3(plane.x, plane.y, plane.z);
+            Vector3 dir = normal * Vector3.Dot(normal, position);
+            float dist = dir.magnitude - plane.w;
+        }
+        return true;
+    }
+
     public static void SetShadowCameraPositionStaticFit(ref StaticFit fit, ref OrthoCam shadCam, int pass, Matrix4x4[] vpMatrices, out Matrix4x4 invShadowVP)
     {
         float range = 0;
