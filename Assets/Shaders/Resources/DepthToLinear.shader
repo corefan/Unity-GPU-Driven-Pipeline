@@ -37,9 +37,9 @@
                 return o;
             }
 
-            Texture2D<float> _MainTex; SamplerState sampler_MainTex;
+            Texture2D<half> _MainTex; SamplerState sampler_MainTex;
 
-            float frag (v2f i) : SV_Target
+            half frag (v2f i) : SV_Target
             {
                 return Linear01Depth(_MainTex.Sample(sampler_MainTex, i.uv));
             }

@@ -17,13 +17,11 @@ namespace MPipeline
             hizDepth = new HizDepth();
             hizDepth.InitHiZ(resources);
             linearMat = new Material(resources.linearDepthShader);
-            PipelineFunctions.InitOcclusionBuffer(ref hizDepth.buffers);
             Application.targetFrameRate = int.MaxValue;
         }
 
         protected override void Dispose()
         {
-            PipelineFunctions.DisposeOcclusionBuffer(ref hizDepth.buffers);
             hizDepth.DisposeHiZ();
         }
         public System.Func<IPerCameraData> getOcclusionData = () => new HizOcclusionData();
@@ -39,21 +37,21 @@ namespace MPipeline
             {
                 PipelineFunctions.UpdateOcclusionBuffer(
                     ref data.baseBuffer, gpuFrustumShader,
-                    ref hizDepth.buffers, hizData,
+                    hizData,
                     data.arrayCollection.frustumPlanes,
                     cam.cam.orthographic, baseBuffer.resultBuffer.count);
                 //绘制第一次剔除结果
-                PipelineFunctions.DrawLastFrameCullResult(ref data.baseBuffer, ref hizDepth.buffers, proceduralMaterial);
+                PipelineFunctions.DrawLastFrameCullResult(ref data.baseBuffer,  proceduralMaterial);
                 //更新Vector，Depth Mip Map
                 hizData.lastFrameCameraUp = cam.transform.up;
-                PipelineFunctions.ClearOcclusionData(ref data.baseBuffer, ref hizDepth.buffers, gpuFrustumShader);
+                PipelineFunctions.ClearOcclusionData(ref data.baseBuffer, gpuFrustumShader);
                 Graphics.Blit(cam.targets.depthTexture, hizData.historyDepth, linearMat, 0);
                 hizDepth.GetMipMap(hizData.historyDepth);
                 //使用新数据进行二次剔除
-                PipelineFunctions.OcclusionRecheck(ref data.baseBuffer, ref hizDepth.buffers, gpuFrustumShader, hizData);
+                PipelineFunctions.OcclusionRecheck(ref data.baseBuffer, gpuFrustumShader, hizData);
                 //绘制二次剔除结果
                 Graphics.SetRenderTarget(cam.targets.geometryColorBuffer, cam.targets.depthBuffer);
-                PipelineFunctions.DrawRecheckCullResult(ref hizDepth.buffers, proceduralMaterial);
+                PipelineFunctions.DrawRecheckCullResult(ref data.baseBuffer, proceduralMaterial);
             }
             else
             {

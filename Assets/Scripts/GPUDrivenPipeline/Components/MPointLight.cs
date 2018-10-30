@@ -1,7 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using Unity.Collections;
 
-public class MPointLight : MonoBehaviour
+public unsafe class MPointLight : MonoBehaviour
 {
     public static List<MPointLight> allPointLights = new List<MPointLight>();
     public float range = 5;
@@ -10,19 +11,22 @@ public class MPointLight : MonoBehaviour
     private int index;
     [System.NonSerialized]
     public Vector3 position;
+    public NativeArray<Vector4> frustumPlanes;
+    private void Awake()
+    {
+        frustumPlanes = new NativeArray<Vector4>(30, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+    }
+
+    private void OnDestroy()
+    {
+        frustumPlanes.Dispose();
+    }
+
     private void OnEnable()
     {
         position = transform.position;
         index = allPointLights.Count;
         allPointLights.Add(this);
-    }
-
-    private void Update()
-    {
-#if UNITY_EDITOR
-        position = transform.position;
-        
-#endif
     }
 
     private void OnDisable()

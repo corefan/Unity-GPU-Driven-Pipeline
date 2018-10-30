@@ -36,11 +36,11 @@
                 o.uv = v.uv;
                 return o;
             }
-            Texture2D<float> _MainTex; SamplerState sampler_MainTex;
+            Texture2D<half> _MainTex; SamplerState sampler_MainTex;
             uint _PreviousLevel;
-            float frag (v2f i) : SV_Target
+            half frag (v2f i) : SV_Target
             {
-                float4 value = float4(
+                half4 value = half4(
                     _MainTex.SampleLevel(sampler_MainTex, i.uv, _PreviousLevel, uint2(-1,-1)),
                     _MainTex.SampleLevel(sampler_MainTex, i.uv, _PreviousLevel, uint2(-1, 1)),
                     _MainTex.SampleLevel(sampler_MainTex, i.uv, _PreviousLevel, uint2(1,-1)),

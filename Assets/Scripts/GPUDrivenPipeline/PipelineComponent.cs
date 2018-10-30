@@ -6,6 +6,10 @@ using Unity.Collections;
 
 public struct PipelineBaseBuffer
 {
+    public ComputeBuffer reCheckCount;
+    public ComputeBuffer reCheckResult;
+    public ComputeBuffer dispatchBuffer;
+
     public ComputeBuffer clusterBuffer;         //ObjectInfo
     public ComputeBuffer instanceCountBuffer;   //uint
     public ComputeBuffer resultBuffer;          //uint
@@ -34,9 +38,6 @@ public struct PipelineBaseBuffer
 
 public struct OcclusionBuffers
 {
-    public ComputeBuffer reCheckCount;
-    public ComputeBuffer reCheckResult;
-    public ComputeBuffer dispatchBuffer;
     public const int FrustumFilter = 2;
     public const int OcclusionRecheck = 3;
     public const int ClearOcclusionData = 4;

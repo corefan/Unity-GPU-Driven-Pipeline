@@ -22,7 +22,7 @@
 			};
 
 			
-			float4 frag (v2f i) : SV_Target
+			float frag (v2f i) : SV_Target
 			{
 				#if UNITY_REVERSED_Z
 				return 1 - i.vertex.z + _ShadowCamDirection.w;

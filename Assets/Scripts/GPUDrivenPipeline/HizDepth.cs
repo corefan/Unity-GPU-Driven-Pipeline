@@ -7,7 +7,6 @@ namespace MPipeline
     {
         private RenderTexture backupMip;
         private Material getLodMat;
-        public OcclusionBuffers buffers;
         public void InitHiZ(PipelineResources resources)
         {
             const int depthRes = 256;

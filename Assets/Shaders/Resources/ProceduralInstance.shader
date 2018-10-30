@@ -65,7 +65,7 @@ CGINCLUDE
 			// Albedo comes from a texture tinted by color
 			float2 uv = IN.uv_MainTex;// - parallax_mapping(IN.uv_MainTex,IN.viewDir);
 			#if USE_ALBEDO
-			float4 c = tex2D (_MainTex, uv) * _Color;
+			half4 c = tex2D (_MainTex, uv) * _Color;
 			o.Albedo = c.rgb;
 			o.Alpha = c.a;
 			#else
@@ -78,7 +78,7 @@ CGINCLUDE
 			o.Occlusion = 1;
 			#endif
 			#if USE_SPECULAR
-			float4 spec = tex2D(_SpecularMap,uv);
+			half4 spec = tex2D(_SpecularMap,uv);
 			o.Specular = _SpecularColor  * spec.rgb;
 			o.Smoothness = _Glossiness * spec.a;
 			#else
@@ -98,29 +98,29 @@ CGINCLUDE
 #define GetScreenPos(pos) ((float2(pos.x, pos.y) * 0.5) / pos.w + 0.5)
 
 
-float4 ProceduralStandardSpecular_Deferred (SurfaceOutputStandardSpecular s, float3 viewDir, out float4 outGBuffer0, out float4 outGBuffer1, out float4 outGBuffer2)
+half4 ProceduralStandardSpecular_Deferred (SurfaceOutputStandardSpecular s, float3 viewDir, out half4 outGBuffer0, out half4 outGBuffer1, out half4 outGBuffer2)
 {
     // energy conservation
     float oneMinusReflectivity;
     s.Albedo = EnergyConservationBetweenDiffuseAndSpecular (s.Albedo, s.Specular, /*out*/ oneMinusReflectivity);
     // RT0: diffuse color (rgb), occlusion (a) - sRGB rendertarget
-    outGBuffer0 = float4(s.Albedo, s.Occlusion);
+    outGBuffer0 = half4(s.Albedo, s.Occlusion);
 
     // RT1: spec color (rgb), smoothness (a) - sRGB rendertarget
-    outGBuffer1 = float4(s.Specular, s.Smoothness);
+    outGBuffer1 = half4(s.Specular, s.Smoothness);
 
     // RT2: normal (rgb), --unused, very low precision-- (a)
-    outGBuffer2 = float4(s.Normal * 0.5f + 0.5f, 0);
-    float4 emission = float4(s.Emission, 1);
+    outGBuffer2 = half4(s.Normal * 0.5f + 0.5f, 0);
+    half4 emission = half4(s.Emission, 1);
 
     return emission;
 }
 float4x4 _LastVp;
 float4x4 _NonJitterVP;
-inline float2 CalculateMotionVector(float4x4 lastvp, float3 worldPos, float2 screenUV)
+inline half2 CalculateMotionVector(float4x4 lastvp, half3 worldPos, half2 screenUV)
 {
-	float4 lastScreenPos = mul(lastvp, float4(worldPos, 1));
-	float2 lastScreenUV = GetScreenPos(lastScreenPos);
+	half4 lastScreenPos = mul(lastvp, half4(worldPos, 1));
+	half2 lastScreenUV = GetScreenPos(lastScreenPos);
 	return screenUV - lastScreenUV;
 }
 
@@ -164,15 +164,15 @@ void frag_surf (v2f_surf IN,
   float3 worldPos = float3(IN.worldTangent.w, IN.worldBinormal.w, IN.worldNormal.w);
   float3 worldViewDir = normalize(IN.worldViewDir);
   SurfaceOutputStandardSpecular o;
-  float3x3 wdMatrix= float3x3(normalize(IN.worldTangent.xyz), normalize(IN.worldBinormal.xyz), normalize(IN.worldNormal.xyz));
+  half3x3 wdMatrix= half3x3(normalize(IN.worldTangent.xyz), normalize(IN.worldBinormal.xyz), normalize(IN.worldNormal.xyz));
   // call surface function
   surf (surfIN, o);
   o.Normal = normalize(mul(o.Normal, wdMatrix));
   outEmission = ProceduralStandardSpecular_Deferred (o, worldViewDir, outGBuffer0, outGBuffer1, outGBuffer2); //GI neccessary here!
   outDepth = IN.pos.z;
   //Calculate Motion Vector
-  float4 screenPos = mul(_NonJitterVP, float4(worldPos, 1));
-  float2 screenUV = GetScreenPos(screenPos);
+  half4 screenPos = mul(_NonJitterVP, float4(worldPos, 1));
+  half2 screenUV = GetScreenPos(screenPos);
   outMotionVector = CalculateMotionVector(_LastVp, worldPos, screenUV);
 }
 
