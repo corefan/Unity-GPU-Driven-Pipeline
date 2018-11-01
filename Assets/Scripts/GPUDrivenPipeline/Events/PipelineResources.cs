@@ -7,7 +7,7 @@ namespace MPipeline
     {
         public ComputeShader gpuFrustumCulling;
         public ComputeShader skinCulling;
-        public ComputeShader temporalHizCompute;
+        public ComputeShader pointLightFrustumCulling;
         public Shader taaShader;
         public Shader indirectDepthShader;
         public Shader HizLodShader;

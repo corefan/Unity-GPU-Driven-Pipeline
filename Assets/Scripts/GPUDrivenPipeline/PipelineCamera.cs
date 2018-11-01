@@ -10,6 +10,7 @@ namespace MPipeline
         public Camera cam;
         [System.NonSerialized]
         public RenderTargets targets;
+        public RenderPipeline.CameraRenderingPath renderingPath = RenderPipeline.CameraRenderingPath.GPUDeferred;
         private List<RenderTexture> temporaryTextures = new List<RenderTexture>(15);
         public Dictionary<PipelineEvent, IPerCameraData> postDatas = new Dictionary<PipelineEvent, IPerCameraData>();
         void Awake()
@@ -35,7 +36,7 @@ namespace MPipeline
             if (RenderPipeline.singleton)
             {
                 PipelineFunctions.InitRenderTarget(ref targets, cam, temporaryTextures);
-                RenderPipeline.singleton.Render(this, destination);
+                RenderPipeline.singleton.Render(renderingPath, this, destination);
                 PipelineFunctions.ReleaseRenderTarget(temporaryTextures);
             }
             else

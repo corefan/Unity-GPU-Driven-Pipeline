@@ -12,6 +12,22 @@ namespace MPipeline
             if (x.layer < y.layer) return 1;
             return 0;
         };
+        private RenderPipeline.CameraRenderingPath m_renderPath = RenderPipeline.CameraRenderingPath.GPUDeferred;
+        public RenderPipeline.CameraRenderingPath renderPath
+        {
+            get
+            {
+                return m_renderPath;
+            }
+            set
+            {
+                if (value == m_renderPath) return;
+                bool alreadyEnabled = EnableEvent;
+                EnableEvent = false;
+                m_renderPath = value;
+                EnableEvent = alreadyEnabled;
+            }
+        }
         [HideInInspector]
         public bool m_enabledInPipeline = false;
         [HideInInspector]
@@ -36,7 +52,7 @@ namespace MPipeline
             }
             pre = false;
             post = false;
-            
+
         }
 
         public bool EnableEvent
@@ -62,7 +78,7 @@ namespace MPipeline
             {
                 if (m_enabledInPipeline == value) return;
                 m_enabledInPipeline = value;
-                SetIn(value);
+                SetIn(value, renderPath);
             }
         }
 
@@ -76,31 +92,54 @@ namespace MPipeline
             {
                 if (m_enableBeforePipeline == value) return;
                 m_enableBeforePipeline = value;
-                SetBefore(value);
+                SetBefore(value, renderPath);
             }
         }
 
-        private void SetIn(bool value)
+        private void SetIn(bool value, RenderPipeline.CameraRenderingPath path)
         {
             if (value)
             {
-                RenderPipeline.drawEvents.InsertTo(this, compareFunc);
+                DrawEvent evt;
+                if (!RenderPipeline.allDrawEvents.TryGetValue(path, out evt))
+                {
+                    evt.drawEvents = new List<PipelineEvent>(10);
+                    evt.preRenderEvents = new List<PipelineEvent>(10);
+                    RenderPipeline.allDrawEvents.Add(path, evt);
+                }
+                evt.drawEvents.InsertTo(this, compareFunc);
             }
             else
             {
-                RenderPipeline.drawEvents.Remove(this);
+                DrawEvent evt;
+                if (RenderPipeline.allDrawEvents.TryGetValue(path, out evt))
+                {
+                    evt.drawEvents.Remove(this);
+                }
+
             }
         }
 
-        private void SetBefore(bool value)
+        private void SetBefore(bool value, RenderPipeline.CameraRenderingPath path)
         {
             if (value)
             {
-                RenderPipeline.preRenderEvents.InsertTo(this, compareFunc);
+                DrawEvent evt;
+                if (!RenderPipeline.allDrawEvents.TryGetValue(path, out evt))
+                {
+                    evt.drawEvents = new List<PipelineEvent>(10);
+                    evt.preRenderEvents = new List<PipelineEvent>(10);
+                    RenderPipeline.allDrawEvents.Add(path, evt);
+                }
+                evt.preRenderEvents.InsertTo(this, compareFunc);
             }
             else
             {
-                RenderPipeline.preRenderEvents.Remove(this);
+                DrawEvent evt;
+                if (RenderPipeline.allDrawEvents.TryGetValue(path, out evt))
+                {
+                    evt.preRenderEvents.Remove(this);
+                }
             }
         }
 
@@ -109,11 +148,11 @@ namespace MPipeline
             SetAttribute();
             if (m_enabledInPipeline)
             {
-                SetIn(true);
+                SetIn(true, m_renderPath);
             }
-            if(m_enableBeforePipeline)
+            if (m_enableBeforePipeline)
             {
-                SetBefore(true);
+                SetBefore(true, m_renderPath);
             }
             Init(resources);
         }
@@ -121,11 +160,11 @@ namespace MPipeline
         {
             if (m_enabledInPipeline)
             {
-                SetIn(false);
+                SetIn(false, m_renderPath);
             }
             if (m_enableBeforePipeline)
             {
-                SetBefore(false);
+                SetBefore(false, m_renderPath);
             }
             Dispose();
         }

@@ -18,6 +18,7 @@ namespace MPipeline
             targetObj.SetAttribute();
             EditorGUILayout.LabelField("Pipeline Settings:");
             bool value = EditorGUILayout.Toggle("Enable In Pipeline", targetObj.EnableEvent);
+            targetObj.renderPath = (RenderPipeline.CameraRenderingPath)EditorGUILayout.EnumPopup("Target Path:", targetObj.renderPath);
             targetObj.EnableEvent = value;
             if(value && !targetObj.EnableEvent)
             {

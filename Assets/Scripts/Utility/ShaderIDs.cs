@@ -60,4 +60,6 @@ public static partial class ShaderIDs
     public static readonly int _LightIntensity = Shader.PropertyToID("_LightIntensity");
     public static readonly int _LightPosition = Shader.PropertyToID("_LightPosition");
     public static readonly int _LightColor = Shader.PropertyToID("_LightColor");
+    public static readonly int _LightOffset = Shader.PropertyToID("_LightOffset");
+    public static readonly int lightPositionBuffer = Shader.PropertyToID("lightPositionBuffer");
 }

@@ -89,7 +89,7 @@ void ClusterCull (uint id : SV_DISPATCHTHREADID)
 {
     if(id >= _Count) return; 
     ClusterMeshData currentObject = clusterBuffer[id];
-    float result =  PlaneTest(currentObject);
+    half result =  PlaneTest(currentObject);
     if(result > 0.5){
         uint currentIndex;
         InterlockedAdd(instanceCountBuffer[1], 1, currentIndex);

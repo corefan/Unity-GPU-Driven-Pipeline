@@ -6,8 +6,13 @@ namespace MPipeline
     public unsafe class RenderPipeline : MonoBehaviour
     {
         #region STATIC_AREA
+        public enum CameraRenderingPath
+        {
+            Unlit, Forward, GPUDeferred
+        }
         public static RenderPipeline singleton;
         public static PipelineCommandData data;
+        public static Dictionary<CameraRenderingPath, DrawEvent> allDrawEvents = new Dictionary<CameraRenderingPath, DrawEvent>();
         private static bool isInitialized = false;
         //Initialized In Every Scene
         public void InitScene()
@@ -24,23 +29,20 @@ namespace MPipeline
             PipelineFunctions.Dispose(ref data.baseBuffer);
         }
         #endregion
-        // private Camera currentCam;
-        public static List<PipelineEvent> drawEvents = new List<PipelineEvent>();
-        public static List<PipelineEvent> preRenderEvents = new List<PipelineEvent>();
         private List<PipelineEvent> allEvents;
-        public GameObject eventParent;
         public PipelineResources resources;
         private void Awake()
         {
             if (singleton)
             {
                 Debug.LogError("Render Pipeline should be Singleton!");
-                Destroy(this);
+                Destroy(gameObject);
                 return;
             }
+            DontDestroyOnLoad(this);
             singleton = this;
             InitScene();
-            allEvents = new List<PipelineEvent>(eventParent.GetComponentsInChildren<PipelineEvent>());
+            allEvents = new List<PipelineEvent>(GetComponentsInChildren<PipelineEvent>());
             foreach (var i in allEvents)
                 i.InitEvent(resources);
         }
@@ -71,7 +73,7 @@ namespace MPipeline
             allEvents = null;
         }
 
-        public void Render(PipelineCamera pipelineCam, RenderTexture dest)
+        public void Render(CameraRenderingPath path, PipelineCamera pipelineCam, RenderTexture dest)
         {
             if (!isInitialized) return;
             //Set Global Data
@@ -81,21 +83,35 @@ namespace MPipeline
             ref RenderArray arr = ref data.arrayCollection;
             PipelineFunctions.GetCullingPlanes(ref data.inverseVP, arr.frustumPlanes, arr.farFrustumCorner, arr.nearFrustumCorner);
             //Start Calling Events
-            foreach (var i in preRenderEvents)
+            DrawEvent evt;
+            if (allDrawEvents.TryGetValue(path, out evt))
             {
-                i.PreRenderFrame(pipelineCam, ref data);
-            }
-            //Run job system together
-            JobHandle.ScheduleBatchedJobs();
-            //Start Prepare Render Targets
-            
-            foreach (var i in drawEvents)
-            {
-                i.FrameUpdate(pipelineCam, ref data);
+                foreach (var i in evt.preRenderEvents)
+                {
+                    i.PreRenderFrame(pipelineCam, ref data);
+                }
+                //Run job system together
+                JobHandle.ScheduleBatchedJobs();
+                //Start Prepare Render Targets
+
+                foreach (var i in evt.drawEvents)
+                {
+                    i.FrameUpdate(pipelineCam, ref data);
+                }
             }
             //Finalize Frame
             Graphics.Blit(pipelineCam.targets.renderTarget, dest);
 
+        }
+    }
+    public struct DrawEvent
+    {
+        public List<PipelineEvent> drawEvents;
+        public List<PipelineEvent> preRenderEvents;
+        public DrawEvent(int capacity)
+        {
+            drawEvents = new List<PipelineEvent>(capacity);
+            preRenderEvents = new List<PipelineEvent>(capacity);
         }
     }
 }

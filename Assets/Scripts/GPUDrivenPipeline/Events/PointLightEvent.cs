@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
+using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 namespace MPipeline
@@ -15,6 +16,9 @@ namespace MPipeline
         private Material pointLightMaterial;
         private ComputeBuffer sphereBuffer;
         private ComputeBuffer sphereIndirectBuffer;
+        private NativeArray<int> indicesArray;
+        private int shadowCount = 0;
+        private int unShadowCount = 0;
         protected override void Init(PipelineResources resources)
         {
             pointLightMaterial = new Material(resources.pointLightShader);
@@ -38,7 +42,13 @@ namespace MPipeline
         public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
         {
             cullJob.planes = (Vector4*)UnsafeUtility.PinGCArrayAndGetDataAddress(data.arrayCollection.frustumPlanes, out gcHandler);
-            cullJob.resultIndices = new NativeList<int>(MPointLight.allPointLights.Count, Allocator.Temp);
+            indicesArray = new NativeArray<int>(MPointLight.allPointLights.Count, Allocator.Temp);
+            cullJob.indices = (int*)indicesArray.GetUnsafePtr();
+            cullJob.shadowCount = (int*) UnsafeUtility.AddressOf(ref shadowCount);
+            cullJob.unShadowCount = (int*)UnsafeUtility.AddressOf(ref unShadowCount);
+            cullJob.length = indicesArray.Length - 1;
+            shadowCount = 0;
+            unShadowCount = 0;
             cullJobHandler = cullJob.Schedule(MPointLight.allPointLights.Count, 32);
         }
 
@@ -48,8 +58,9 @@ namespace MPipeline
             cullJobHandler.Complete();
             UnsafeUtility.ReleaseGCObject(gcHandler);
             pointLightMaterial.SetBuffer(ShaderIDs.verticesBuffer, sphereBuffer);
-            foreach (var i in cullJob.resultIndices)
-            {
+            //Un Shadow Point light
+            for(int c = 0; c < unShadowCount; c++) {
+                var i = cullJob.indices[cullJob.length - c];
                 MPointLight light = MPointLight.allPointLights[i];
                 pointLightMaterial.SetFloat(ShaderIDs._LightRange, 1f / light.range);
                 pointLightMaterial.SetVector(ShaderIDs._LightColor, light.color);
@@ -58,7 +69,9 @@ namespace MPipeline
                 pointLightMaterial.SetPass(0);
                 Graphics.DrawProceduralIndirect(MeshTopology.Triangles, sphereIndirectBuffer);
             }
-            cullJob.resultIndices.Dispose();
+            //TODO
+            //Shadow Point Light
+            indicesArray.Dispose();
         }
 
         protected override void Dispose()
@@ -69,25 +82,38 @@ namespace MPipeline
         }
     }
 
+    public unsafe struct PointLightDatas
+    {
+        
+    }
+
     public unsafe struct MPointLightEvent : IJobParallelFor
     {
         [NativeDisableUnsafePtrRestriction]
         public Vector4* planes;
-        public NativeList<int> resultIndices;
+        [NativeDisableUnsafePtrRestriction]
+        public int* indices;
+        [NativeDisableUnsafePtrRestriction]
+        public int* shadowCount;
+        [NativeDisableUnsafePtrRestriction]
+        public int* unShadowCount;
+        public int length;
         public void Execute(int index)
         {
             MPointLight cube = MPointLight.allPointLights[index];
             if (PipelineFunctions.FrustumCulling(cube.position, cube.range, planes))
             {
-#if UNITY_EDITOR        //For debugging
-                if (!resultIndices.ConcurrentAdd(index))
+                if(cube.useShadow)
                 {
-                    Debug.LogError("Point Light culling Out of range");
+                    int last = Interlocked.Increment(ref *shadowCount) - 1;
+                    indices[last] = index;
+                }else
+                {
+                    int last = Interlocked.Increment(ref *unShadowCount) - 1;
+                    indices[length - last] = index;
                 }
-#else
-                resultIndices.ConcurrentAdd(index);
-#endif
             }
         }
     }
+
 }
