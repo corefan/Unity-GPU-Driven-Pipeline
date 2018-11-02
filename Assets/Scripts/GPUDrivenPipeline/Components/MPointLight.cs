@@ -26,11 +26,11 @@ public unsafe class MPointLight : MonoBehaviour
         }
     }
     public RenderTexture m_shadowmapTexture;
-
+    /*
     private void Update()
     {
         position = transform.position;
-    }
+    }*/
 
     private void OnDestroy()
     {

@@ -155,7 +155,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 561810546}
   m_LocalRotation: {x: 0.17987181, y: 0.025984718, z: -0.0047537666, w: 0.9833353}
-  m_LocalPosition: {x: 11.160093, y: 1.6254435, z: -4.7065754}
+  m_LocalPosition: {x: 11.160093, y: 3.724, z: -4.7065754}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -310,7 +310,7 @@ MonoBehaviour:
   m_enabledInPipeline: 1
   m_enableBeforePipeline: 0
   layer: 2000
-  doubleCheck: 0
+  occCullingMod: 0
   proceduralMaterial: {fileID: 2100000, guid: f8c3854a77b86184f8afd2b9b09a2eba, type: 2}
 --- !u!114 &629980910
 MonoBehaviour:

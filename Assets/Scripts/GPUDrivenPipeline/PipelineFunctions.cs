@@ -318,14 +318,14 @@ public unsafe static class PipelineFunctions
     /// <summary>
     /// Set Basement buffers
     /// </summary>
-    public static void SetBaseBuffer(ref PipelineBaseBuffer baseBuffer, ComputeShader gpuFrustumShader, Vector4[] frustumCullingPlanes, int kernel)
+    public static void SetBaseBuffer(ref PipelineBaseBuffer baseBuffer, ComputeShader gpuFrustumShader, Vector4[] frustumCullingPlanes)
     {
         var compute = gpuFrustumShader;
         compute.SetVectorArray(ShaderIDs.planes, frustumCullingPlanes);
-        compute.SetBuffer(kernel, ShaderIDs.clusterBuffer, baseBuffer.clusterBuffer);
-        compute.SetBuffer(kernel, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
+        compute.SetBuffer(0, ShaderIDs.clusterBuffer, baseBuffer.clusterBuffer);
+        compute.SetBuffer(0, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
         compute.SetBuffer(1, ShaderIDs.instanceCountBuffer, baseBuffer.instanceCountBuffer);
-        compute.SetBuffer(kernel, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
+        compute.SetBuffer(0, ShaderIDs.resultBuffer, baseBuffer.resultBuffer);
     }
 
     public static void SetShaderBuffer(ref PipelineBaseBuffer basebuffer, Material mat)
@@ -352,10 +352,10 @@ public unsafe static class PipelineFunctions
         Graphics.DrawProceduralIndirect(MeshTopology.Triangles, occBuffer.reCheckCount);
     }
 
-    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, int kernel, bool isOrtho)
+    public static void RunCullDispatching(ref PipelineBaseBuffer baseBuffer, ComputeShader computeShader, bool isOrtho)
     {
         computeShader.SetInt(ShaderIDs._CullingPlaneCount, isOrtho ? 6 : 5);
-        ComputeShaderUtility.Dispatch(computeShader, kernel, baseBuffer.clusterCount, 64);
+        ComputeShaderUtility.Dispatch(computeShader, 0, baseBuffer.clusterCount, 64);
     }
     public static void RenderProceduralCommand(ref PipelineBaseBuffer buffer, Material material)
     {
@@ -397,8 +397,8 @@ public unsafe static class PipelineFunctions
             Matrix4x4 invpVPMatrix;
             SetShadowCameraPositionStaticFit(ref staticFit, ref shadMap.shadCam, pass, cascadeShadowMapVP, out invpVPMatrix);
             GetCullingPlanes(ref invpVPMatrix, shadowFrustumPlanes);
-            SetBaseBuffer(ref baseBuffer, gpuFrustumShader, shadowFrustumPlanes, 0);
-            RunCullDispatching(ref baseBuffer, gpuFrustumShader, 0, true);
+            SetBaseBuffer(ref baseBuffer, gpuFrustumShader, shadowFrustumPlanes);
+            RunCullDispatching(ref baseBuffer, gpuFrustumShader, true);
             float* biasList = (float*)UnsafeUtility.AddressOf(ref settings.bias);
             UpdateCascadeState(ref shadMap, biasList[pass] / currentCam.farClipPlane, pass);
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, baseBuffer.instanceCountBuffer);
