@@ -18,28 +18,19 @@ public unsafe class MPointLight : MonoBehaviour
         {
             if(m_shadowmapTexture == null)
             {
-                RenderTextureDescriptor des = new RenderTextureDescriptor();
-                des.autoGenerateMips = false;
-                des.bindMS = false;
-                des.colorFormat = RenderTextureFormat.RHalf;
-                des.depthBufferBits = 16;
-                des.dimension = UnityEngine.Rendering.TextureDimension.Cube;
-                des.enableRandomWrite = false;
-                des.height = 1024;
-                des.memoryless = RenderTextureMemoryless.None;
-                des.msaaSamples = 1;
-                des.shadowSamplingMode = UnityEngine.Rendering.ShadowSamplingMode.None;
-                des.sRGB = false;
-                des.useMipMap = false;
-                des.width = 1024;
-                des.vrUsage = VRTextureUsage.None;
-                des.volumeDepth = 0;
-                m_shadowmapTexture = new RenderTexture(des);
+                m_shadowmapTexture = new RenderTexture(1024, 1024, 16, RenderTextureFormat.RHalf, RenderTextureReadWrite.Linear);
+                m_shadowmapTexture.dimension = UnityEngine.Rendering.TextureDimension.Cube;
+                m_shadowmapTexture.filterMode = FilterMode.Point;
             }
             return m_shadowmapTexture;
         }
     }
-    private RenderTexture m_shadowmapTexture;
+    public RenderTexture m_shadowmapTexture;
+
+    private void Update()
+    {
+        position = transform.position;
+    }
 
     private void OnDestroy()
     {

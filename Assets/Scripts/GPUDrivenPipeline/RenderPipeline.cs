@@ -13,19 +13,14 @@ namespace MPipeline
         public static RenderPipeline singleton;
         public static PipelineCommandData data;
         public static Dictionary<CameraRenderingPath, DrawEvent> allDrawEvents = new Dictionary<CameraRenderingPath, DrawEvent>();
-        private static bool isInitialized = false;
         //Initialized In Every Scene
         public void InitScene()
         {
-            if (isInitialized) return;
-            isInitialized = true;
             data.arrayCollection = new RenderArray(true);
             PipelineFunctions.InitBaseBuffer(ref data.baseBuffer);
         }
         public void DisposeScene()
         {
-            if (!isInitialized) return;
-            isInitialized = false;
             PipelineFunctions.Dispose(ref data.baseBuffer);
         }
         #endregion
@@ -75,7 +70,6 @@ namespace MPipeline
 
         public void Render(CameraRenderingPath path, PipelineCamera pipelineCam, RenderTexture dest)
         {
-            if (!isInitialized) return;
             //Set Global Data
             Camera cam = pipelineCam.cam;
             data.resources = resources;
@@ -86,6 +80,7 @@ namespace MPipeline
             DrawEvent evt;
             if (allDrawEvents.TryGetValue(path, out evt))
             {
+                //Pre Calculate Events
                 foreach (var i in evt.preRenderEvents)
                 {
                     i.PreRenderFrame(pipelineCam, ref data);
@@ -93,7 +88,7 @@ namespace MPipeline
                 //Run job system together
                 JobHandle.ScheduleBatchedJobs();
                 //Start Prepare Render Targets
-
+                //Frame Update Events
                 foreach (var i in evt.drawEvents)
                 {
                     i.FrameUpdate(pipelineCam, ref data);

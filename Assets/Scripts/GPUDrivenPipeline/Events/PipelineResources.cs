@@ -17,6 +17,7 @@ namespace MPipeline
         public Shader reflectionShader;
         public Shader linearDepthShader;
         public Shader pointLightShader;
+        public Shader cubeDepthShader;
         public Mesh occluderMesh;
         public Mesh sphereMesh;
     }

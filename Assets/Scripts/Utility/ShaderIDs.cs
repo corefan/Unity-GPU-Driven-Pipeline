@@ -8,6 +8,7 @@ public static partial class ShaderIDs
     public static readonly int planes = Shader.PropertyToID("planes");
     public static readonly int _ShadowCamDirection = Shader.PropertyToID("_ShadowCamDirection");
     public static readonly int _DirShadowMap = Shader.PropertyToID("_DirShadowMap");
+    public static readonly int _CubeShadowMap = Shader.PropertyToID("_CubeShadowMap");
     public static readonly int _InvVP = Shader.PropertyToID("_InvVP");
     public static readonly int _LastVp = Shader.PropertyToID("_LastVp");
     public static readonly int _ShadowMapVP = Shader.PropertyToID("_ShadowMapVP");
@@ -56,9 +57,7 @@ public static partial class ShaderIDs
     public static readonly int _PostExposure = Shader.PropertyToID("_PostExposure");
     public static readonly int _TemporalClipBounding = Shader.PropertyToID("_TemporalClipBounding");
 
-    public static readonly int _LightRange = Shader.PropertyToID("_LightRange");
     public static readonly int _LightIntensity = Shader.PropertyToID("_LightIntensity");
-    public static readonly int _LightPosition = Shader.PropertyToID("_LightPosition");
     public static readonly int _LightColor = Shader.PropertyToID("_LightColor");
     public static readonly int _LightOffset = Shader.PropertyToID("_LightOffset");
     public static readonly int lightPositionBuffer = Shader.PropertyToID("lightPositionBuffer");

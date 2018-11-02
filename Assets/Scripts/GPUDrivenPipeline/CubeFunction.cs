@@ -6,7 +6,7 @@ namespace MPipeline
 {
     public unsafe static class CubeFunction
     {
-        const int initLength = 10;
+        const int initLength = 1;
         const int GetFrustumPlane = 0;
         const int RunFrustumCull = 1;
         const int ClearCluster = 2;
@@ -16,7 +16,7 @@ namespace MPipeline
             buffer.currentLength = initLength;
             buffer.planes = new ComputeBuffer(initLength * 6, sizeof(Vector4));
             buffer.lightPositionBuffer = new ComputeBuffer(initLength, sizeof(Vector4));
-            buffer.indirectDrawBuffer = new ComputeBuffer(initLength * 5, sizeof(int));
+            buffer.indirectDrawBuffer = new ComputeBuffer(initLength * 5, sizeof(int), ComputeBufferType.IndirectArguments);
         }
 
         public static void UpdateLength(ref CubeCullingBuffer buffer, int targetLength)
@@ -43,16 +43,16 @@ namespace MPipeline
             shader.SetBuffer(GetFrustumPlane, ShaderIDs.lightPositionBuffer, buffer.lightPositionBuffer);
         }
 
-        public static void PrepareDispatch(ref CubeCullingBuffer buffer, ComputeShader shader, NativeArray<Vector4> positions, int targetLength)
+        public static void PrepareDispatch(ref CubeCullingBuffer buffer, ComputeShader shader, NativeArray<Vector4> positions)
         {
-            buffer.lightPositionBuffer.SetData(positions, 0, 0, targetLength);
+            int targetLength = positions.Length;
+            buffer.lightPositionBuffer.SetData(positions);
             ComputeShaderUtility.Dispatch(shader, ClearCluster, targetLength, 64);
             ComputeShaderUtility.Dispatch(shader, GetFrustumPlane, targetLength, 16);
         }
 
         public static void DrawShadow(MPointLight lit, ref CubeCullingBuffer buffer, ref PipelineBaseBuffer baseBuffer, ComputeShader shader, int offset, Material depthMaterial)
         {
-            offset = offset * sizeof(int) * 5;
             shader.SetInt(ShaderIDs._LightOffset, offset);
             ComputeShaderUtility.Dispatch(shader, RunFrustumCull, baseBuffer.clusterCount, 64);
             PerspCam cam = new PerspCam();
@@ -62,10 +62,26 @@ namespace MPipeline
             cam.position = lit.position;
             cam.fov = 90f;
             Matrix4x4 vpMatrix;
-            depthMaterial.SetVector(ShaderIDs._LightPosition, new Vector4(lit.position.x, lit.position.y, lit.position.z, lit.range));
+            depthMaterial.SetVector(ShaderIDs._LightPos, new Vector4(lit.position.x, lit.position.y, lit.position.z, lit.range));
+            PipelineFunctions.SetShaderBuffer(ref baseBuffer, depthMaterial);
             //Forward
             cam.forward = Vector3.forward;
-            cam.up = Vector3.up;
+            cam.up = Vector3.down;
+            cam.right = Vector3.left;
+            cam.position = lit.position;
+            cam.UpdateTRSMatrix();
+            cam.UpdateProjectionMatrix();
+            vpMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true) * cam.worldToCameraMatrix;
+            Graphics.SetRenderTarget(lit.shadowmapTexture, 0, CubemapFace.NegativeZ);
+            GL.Clear(true, true, Color.white);
+            depthMaterial.SetMatrix(ShaderIDs._VP, vpMatrix);
+            depthMaterial.SetPass(0);
+            offset = offset * 20;
+
+            Graphics.DrawProceduralIndirect(MeshTopology.Triangles, buffer.indirectDrawBuffer, offset);
+            //Back
+            cam.forward = Vector3.back;
+            cam.up = Vector3.down;
             cam.right = Vector3.right;
             cam.UpdateTRSMatrix();
             cam.UpdateProjectionMatrix();
@@ -74,18 +90,7 @@ namespace MPipeline
             GL.Clear(true, true, Color.white);
             depthMaterial.SetMatrix(ShaderIDs._VP, vpMatrix);
             depthMaterial.SetPass(0);
-            Graphics.DrawProceduralIndirect(MeshTopology.Triangles, buffer.indirectDrawBuffer, offset);
-            //Back
-            cam.forward = Vector3.back;
-            cam.up = Vector3.up;
-            cam.right = Vector3.left;
-            cam.UpdateTRSMatrix();
-            cam.UpdateProjectionMatrix();
-            vpMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true) * cam.worldToCameraMatrix;
-            Graphics.SetRenderTarget(lit.shadowmapTexture, 0, CubemapFace.NegativeZ);
-            GL.Clear(true, true, Color.white);
-            depthMaterial.SetMatrix(ShaderIDs._VP, vpMatrix);
-            depthMaterial.SetPass(0);
+            
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, buffer.indirectDrawBuffer, offset);
             //Up
             cam.forward = Vector3.up;
@@ -113,8 +118,8 @@ namespace MPipeline
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, buffer.indirectDrawBuffer, offset);
             //Right
             cam.forward = Vector3.right;
-            cam.up = Vector3.up;
-            cam.right = Vector3.back;
+            cam.up = Vector3.down;
+            cam.right = Vector3.forward;
             cam.UpdateTRSMatrix();
             cam.UpdateProjectionMatrix();
             vpMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true) * cam.worldToCameraMatrix;
@@ -125,10 +130,11 @@ namespace MPipeline
             Graphics.DrawProceduralIndirect(MeshTopology.Triangles, buffer.indirectDrawBuffer, offset);
             //Left
             cam.forward = Vector3.left;
-            cam.up = Vector3.up;
-            cam.right = Vector3.forward;
+            cam.up = Vector3.down;
+            cam.right = Vector3.back;
             cam.UpdateTRSMatrix();
             cam.UpdateProjectionMatrix();
+            vpMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, true) * cam.worldToCameraMatrix;
             Graphics.SetRenderTarget(lit.shadowmapTexture, 0, CubemapFace.NegativeX);
             GL.Clear(true, true, Color.white);
             depthMaterial.SetMatrix(ShaderIDs._VP, vpMatrix);

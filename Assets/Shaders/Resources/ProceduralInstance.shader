@@ -133,7 +133,6 @@ struct v2f_surf {
   float3 worldViewDir : TEXCOORD4;
 };
 float4 _MainTex_ST;
-
 v2f_surf vert_surf (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) 
 {
   	Point v = getVertex(vertexID, instanceID);

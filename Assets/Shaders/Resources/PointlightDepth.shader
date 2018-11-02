@@ -4,12 +4,12 @@
     {
         Tags { "RenderType"="Opaque" }
         LOD 100
-
         Pass
         {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            #pragma target 5.0
             #include "CGINC/Procedural.cginc"
             struct v2f
             {
@@ -17,7 +17,7 @@
                 float3 worldPos : TEXCOORD0;
             };
             float4x4 _VP;
-            float4 _LightPosition;
+            float4 _LightPos;
             v2f vert (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) 
             {
                 Point v = getVertex(vertexID, instanceID);
@@ -29,8 +29,8 @@
 
             half frag (v2f i) : SV_Target
             {
-                return distance(i.worldPos, _LightPosition.xyz) / _LightPosition.w;
-            }
+               return distance(i.worldPos, _LightPos.xyz) / _LightPos.w;
+            } 
             ENDCG
         }
     }

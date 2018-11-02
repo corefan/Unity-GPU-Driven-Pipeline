@@ -17,7 +17,6 @@ RWStructuredBuffer<float4> lightPositionBuffer;
 RWStructuredBuffer<float4> planes;
 uint _Count;
 uint _LightOffset;
-float _LightRange;
 static const half3 CubeNormal[6] = {
     half3(-1, 0, 0),
     half3(1, 0, 0),
@@ -47,7 +46,7 @@ half PlaneTest(ClusterMeshData info){
         float r = dot(position, plane.xyz); 
         float3 absNormal = abs(plane.xyz);
         float f = dot(absNormal, extent);
-        result *= ((r - f) < -plane.w) ? 1.0 : 0.0;
+        result *= ((-r - f) < -plane.w) ? 1.0 : 0.0;
     }
     return result;
 }
@@ -59,7 +58,7 @@ void RunFrustumCull(uint id : SV_DISPATCHTHREADID)
     half result =  PlaneTest(currentObject);
     if(result > 0.5){
         uint currentIndex;
-        InterlockedAdd(instanceCountBuffer[_LightOffset + 1], 1, currentIndex);
+        InterlockedAdd(instanceCountBuffer[_LightOffset * 5 + 1], 1, currentIndex);
         resultBuffer[currentIndex] = id;
     }
 }
@@ -68,7 +67,7 @@ void RunFrustumCull(uint id : SV_DISPATCHTHREADID)
 void ClearCluster(uint id : SV_DISPATCHTHREADID)
 {
     if(id >=_Count) return;
-    id *= 5;
-    instanceCountBuffer[id] = CLUSTERVERTEXCOUNT;
-    instanceCountBuffer[id + 1] = 0;
+    uint dd = id * 5;
+    instanceCountBuffer[dd] = CLUSTERVERTEXCOUNT;
+    instanceCountBuffer[dd + 1] = 0;
 }

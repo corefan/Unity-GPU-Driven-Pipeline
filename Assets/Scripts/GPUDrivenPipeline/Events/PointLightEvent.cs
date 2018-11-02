@@ -14,14 +14,19 @@ namespace MPipeline
         private MPointLightEvent cullJob;
         private JobHandle cullJobHandler;
         private Material pointLightMaterial;
+        private Material cubeDepthMaterial;
         private ComputeBuffer sphereBuffer;
         private ComputeBuffer sphereIndirectBuffer;
         private NativeArray<int> indicesArray;
+        private CubeCullingBuffer cubeBuffer;
         private int shadowCount = 0;
         private int unShadowCount = 0;
         protected override void Init(PipelineResources resources)
         {
+            cubeBuffer = new CubeCullingBuffer();
+            CubeFunction.Init(ref cubeBuffer);
             pointLightMaterial = new Material(resources.pointLightShader);
+            cubeDepthMaterial = new Material(resources.cubeDepthShader);
             Vector3[] vertices = resources.sphereMesh.vertices;
             int[] triangle = resources.sphereMesh.triangles;
             NativeArray<Vector3> allVertices = new NativeArray<Vector3>(triangle.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
@@ -37,6 +42,7 @@ namespace MPipeline
             indirect[0] = (uint)sphereBuffer.count;
             indirect[1] = 1;
             sphereIndirectBuffer.SetData(indirect);
+            indirect.Dispose();
         }
 
         public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
@@ -54,22 +60,48 @@ namespace MPipeline
 
         public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
+
             cullJobHandler.Complete();
             UnsafeUtility.ReleaseGCObject(gcHandler);
             pointLightMaterial.SetBuffer(ShaderIDs.verticesBuffer, sphereBuffer);
             //Un Shadow Point light
-            for(int c = 0; c < unShadowCount; c++) {
+            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
+            for (int c = 0; c < unShadowCount; c++) {
                 var i = cullJob.indices[cullJob.length - c];
                 MPointLight light = MPointLight.allPointLights[i];
-                pointLightMaterial.SetFloat(ShaderIDs._LightRange, 1f / light.range);
                 pointLightMaterial.SetVector(ShaderIDs._LightColor, light.color);
-                pointLightMaterial.SetVector(ShaderIDs._LightPos, light.position);
+                pointLightMaterial.SetVector(ShaderIDs._LightPos, new Vector4(light.position.x, light.position.y, light.position.z, light.range));
                 pointLightMaterial.SetFloat(ShaderIDs._LightIntensity, light.intensity);
                 pointLightMaterial.SetPass(0);
                 Graphics.DrawProceduralIndirect(MeshTopology.Triangles, sphereIndirectBuffer);
             }
             //TODO
+            if (shadowCount > 0)
+            {
+                NativeArray<Vector4> positions = new NativeArray<Vector4>(shadowCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
+                for (int i = 0; i < shadowCount; i++)
+                {
+                    MPointLight light = MPointLight.allPointLights[cullJob.indices[i]];
+                    positions[i] = new Vector4(light.position.x, light.position.y, light.position.z, light.range);
+                }
+                CubeFunction.UpdateLength(ref cubeBuffer, shadowCount);
+                var cullShader = data.resources.pointLightFrustumCulling;
+                CubeFunction.SetBuffer(ref cubeBuffer, ref data.baseBuffer, cullShader);
+                CubeFunction.PrepareDispatch(ref cubeBuffer, cullShader, positions);
+                for (int i = 0; i < shadowCount; i++)
+                {
+                    MPointLight light = MPointLight.allPointLights[cullJob.indices[i]];
+                    CubeFunction.DrawShadow(light, ref cubeBuffer, ref data.baseBuffer, cullShader, i, cubeDepthMaterial);
+                    Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
+                    pointLightMaterial.SetVector(ShaderIDs._LightColor, light.color);
+                    pointLightMaterial.SetVector(ShaderIDs._LightPos, positions[i]);
+                    pointLightMaterial.SetFloat(ShaderIDs._LightIntensity, light.intensity);
+                    pointLightMaterial.SetTexture(ShaderIDs._CubeShadowMap, light.shadowmapTexture);
+                    pointLightMaterial.SetPass(1);
+                    Graphics.DrawProceduralIndirect(MeshTopology.Triangles, sphereIndirectBuffer);
+                }
+                positions.Dispose();
+            }
             //Shadow Point Light
             indicesArray.Dispose();
         }
@@ -77,14 +109,11 @@ namespace MPipeline
         protected override void Dispose()
         {
             Destroy(pointLightMaterial);
+            Destroy(cubeDepthMaterial);
             sphereBuffer.Dispose();
             sphereIndirectBuffer.Dispose();
+            CubeFunction.Dispose(ref cubeBuffer);
         }
-    }
-
-    public unsafe struct PointLightDatas
-    {
-        
     }
 
     public unsafe struct MPointLightEvent : IJobParallelFor
