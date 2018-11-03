@@ -142,7 +142,7 @@ public unsafe static class PipelineFunctions
             pointCount += pointArray.Length;
         }
 
-        baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, ClusterMeshData.SIZE);
+        baseBuffer.clusterBuffer = new ComputeBuffer(allInfos.Length, sizeof(ClusterMeshData));
         baseBuffer.clusterBuffer.SetData(allInfos);
         baseBuffer.resultBuffer = new ComputeBuffer(allInfos.Length, PipelineBaseBuffer.UINTSIZE);
         baseBuffer.instanceCountBuffer = new ComputeBuffer(5, 4, ComputeBufferType.IndirectArguments);
@@ -150,7 +150,7 @@ public unsafe static class PipelineFunctions
         instanceCountBufferValue[0] = PipelineBaseBuffer.CLUSTERVERTEXCOUNT;
         baseBuffer.instanceCountBuffer.SetData(instanceCountBufferValue);
         instanceCountBufferValue.Dispose();
-        baseBuffer.verticesBuffer = new ComputeBuffer(allPoints.Length, Point.SIZE);
+        baseBuffer.verticesBuffer = new ComputeBuffer(allPoints.Length, sizeof(Point));
         baseBuffer.verticesBuffer.SetData(allPoints);
         baseBuffer.clusterCount = allInfos.Length;
         allInfos.Dispose();

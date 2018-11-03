@@ -141,21 +141,18 @@ public struct Point
     public Vector3 vertex;
     public Vector4 tangent;
     public Vector3 normal;
-    public Vector2 texcoord;
-    public const int SIZE = 48;
+    public Vector3 texcoord;
 }
 [System.Serializable]
 public struct ClusterMeshData
 {
     public Vector3 extent;
     public Vector3 position;
-    public const int SIZE = 24;
 }
 public struct PerObjectData
 {
     public Vector3 extent;
     public uint instanceOffset;
-    public const int SIZE = 16;
 }
 
 public struct PerspCam

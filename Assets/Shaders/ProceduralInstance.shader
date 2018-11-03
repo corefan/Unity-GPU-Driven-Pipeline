@@ -126,7 +126,7 @@ inline half2 CalculateMotionVector(float4x4 lastvp, half3 worldPos, half2 screen
 
 struct v2f_surf {
   UNITY_POSITION(pos);
-  float2 pack0 : TEXCOORD0; 
+  float3 pack0 : TEXCOORD0; 
   float4 worldTangent : TEXCOORD1;
   float4 worldBinormal : TEXCOORD2;
   float4 worldNormal : TEXCOORD3;
@@ -137,7 +137,7 @@ v2f_surf vert_surf (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID
 {
   	Point v = getVertex(vertexID, instanceID);
   	v2f_surf o;
-  	o.pack0.xy = TRANSFORM_TEX(v.texcoord, _MainTex);
+  	o.pack0 = v.texcoord;
   	o.pos = mul(UNITY_MATRIX_VP, float4(v.vertex, 1));
   	o.worldTangent = float4( v.tangent.xyz, v.vertex.x);
 	o.worldNormal =float4(v.normal, v.vertex.z);

@@ -6,6 +6,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using System.IO;
 using Unity.Jobs;
 using System;
+using Random = UnityEngine.Random;
 namespace MPipeline
 {
     public unsafe static class ClusterSortFunction
@@ -87,15 +88,14 @@ namespace MPipeline
         }
     }
 
-    [ExecuteInEditMode]
     public unsafe class ClusterGenerator : MonoBehaviour
     {
         private Mesh testMesh;
         public string fileName = "testModel";
         public Material testMat;
         public bool clear = true;
-
-        private void OnDisable()
+        [EasyButtons.Button]
+        private void GenerateCluster()
         {
             testMesh = GetComponent<MeshFilter>().sharedMesh;
             Vector3[] verticesMesh = testMesh.vertices;
@@ -115,6 +115,7 @@ namespace MPipeline
                 p.normal = normal;
                 p.vertex = vertex;
                 p.texcoord = uv[i];
+                p.texcoord.z = Random.Range(0f, 1f);
                 pointsFromMesh[i] = p;
             }
             List<Vector4Int> value = ClusterFunctions.AddTrianglesToDictionary(testMesh.triangles);

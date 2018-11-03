@@ -6,7 +6,7 @@ namespace MPipeline
 {
     public unsafe static class CubeFunction
     {
-        const int initLength = 1;
+        const int initLength = 10;
         const int GetFrustumPlane = 0;
         const int RunFrustumCull = 1;
         const int ClearCluster = 2;

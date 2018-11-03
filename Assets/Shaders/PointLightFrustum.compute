@@ -31,8 +31,8 @@ void GetFrustumPlane (uint2 id : SV_DispatchThreadID)
     if(id.x >= _Count) return;
     half3 normal = CubeNormal[id.y];
     float4 posBufferData = lightPositionBuffer[id.x];
-    float3 position = posBufferData.xyz - normal * posBufferData.w;
-    planes[id.x * 6 + id.y] = float4(normal, dot(position, normal));
+    float3 position = posBufferData.xyz + normal * posBufferData.w;
+    planes[id.x * 6 + id.y] = float4(normal, -dot(position, normal));
 }
 
 half PlaneTest(ClusterMeshData info){
@@ -46,7 +46,7 @@ half PlaneTest(ClusterMeshData info){
         float r = dot(position, plane.xyz); 
         float3 absNormal = abs(plane.xyz);
         float f = dot(absNormal, extent);
-        result *= ((-r - f) < -plane.w) ? 1.0 : 0.0;
+        result *= ((r - f) < -plane.w) ? 1.0 : 0.0;
     }
     return result;
 }
