@@ -23,10 +23,10 @@ uint _Count;
 float3 _CameraUpVector;
 float4x4 _VP;
 float4x4 _LastVp;
-half PlaneTest(ClusterMeshData info){
+float PlaneTest(ClusterMeshData info){
     float3 position = info.position;
     float3 extent = info.extent;
-    half result = 1;
+    float result = 1;
     for(uint i = 0; i < _CullingPlaneCount; ++i)
     {
         float4 plane = planes[i];
@@ -37,30 +37,17 @@ half PlaneTest(ClusterMeshData info){
     }
     return result;
 }
-
-static const half3 extentArray[8] = 
+static const float3 aggressiveExtentArray[6] =
 {
-    half3(1,1,1),
-    half3(1,1,-1),
-    half3(1,-1,1),
-    half3(1,-1,-1),
-    half3(-1,1,1),
-    half3(-1,1,-1),
-    half3(-1,-1,1),
-    half3(-1,-1,-1)
+    float3(0, 1, 0),
+    float3(0, -1, 0),
+    float3(1, 0, 0),
+    float3(-1, 0, 0),
+    float3(0, 0, 1),
+    float3(0, 0, -1)
 };
 
-static const half3 aggressiveExtentArray[6] =
-{
-    half3(0, 1, 0),
-    half3(0, -1, 0),
-    half3(1, 0, 0),
-    half3(-1, 0, 0),
-    half3(0, 0, 1),
-    half3(0, 0, -1)
-};
-
-half OcclusionTest(ClusterMeshData info, float4x4 vpMat)
+float OcclusionTest(ClusterMeshData info, float4x4 vpMat)
 {
     float3 farPoint = info.position + length(info.extent) * _CameraUpVector;
     float4 centerClipPos = mul(vpMat, float4(info.position, 1));
@@ -75,10 +62,10 @@ half OcclusionTest(ClusterMeshData info, float4x4 vpMat)
         float3 worldPoint = info.position + info.extent * aggressiveExtentArray[i];
         float4 clipPos = mul(vpMat, float4(worldPoint, 1));
         clipPos /= clipPos.w;
-        half2 uv = clipPos.xy;
+        float2 uv = clipPos.xy;
         uv = uv * 0.5 + 0.5;
-        half depth = _HizDepthTex.SampleLevel(sampler_HizDepthTex, uv, lodLevel);
-        half dist = Linear01Depth(clipPos.z);
+        float depth = _HizDepthTex.SampleLevel(sampler_HizDepthTex, uv, lodLevel);
+        float dist = Linear01Depth(clipPos.z);
         if(depth > dist) return 1;
     }
     return 0;
@@ -89,7 +76,7 @@ void ClusterCull (uint id : SV_DISPATCHTHREADID)
 {
     if(id >= _Count) return; 
     ClusterMeshData currentObject = clusterBuffer[id];
-    half result =  PlaneTest(currentObject);
+    float result =  PlaneTest(currentObject);
     if(result > 0.5){
         uint currentIndex;
         InterlockedAdd(instanceCountBuffer[1], 1, currentIndex);

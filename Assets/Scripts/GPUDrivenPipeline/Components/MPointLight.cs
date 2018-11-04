@@ -25,7 +25,7 @@ public unsafe class MPointLight : MonoBehaviour
             return m_shadowmapTexture;
         }
     }
-    public RenderTexture m_shadowmapTexture;
+    private RenderTexture m_shadowmapTexture;
     /*
     private void Update()
     {

@@ -220,12 +220,16 @@ public unsafe static class PipelineFunctions
 
     public static bool FrustumCulling(Vector3 position, float range, Vector4* frustumPlanes)
     {
-        for(int i = 0; i < 6; ++i)
+        for(int i = 0; i < 5; ++i)
         {
             ref Vector4 plane = ref frustumPlanes[i];
             Vector3 normal = new Vector3(plane.x, plane.y, plane.z);
-            Vector3 dir = normal * Vector3.Dot(normal, position);
-            float dist = dir.magnitude - plane.w;
+            float rayDist = Vector3.Dot(normal, position);
+            rayDist += plane.w;
+            if(rayDist > range)
+            {
+                return false;
+            }
         }
         return true;
     }
