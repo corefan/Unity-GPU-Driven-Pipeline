@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 namespace MPipeline
 {
     [RequireComponent(typeof(Camera))]
@@ -12,7 +13,7 @@ namespace MPipeline
         public RenderTargets targets;
         public RenderPipeline.CameraRenderingPath renderingPath = RenderPipeline.CameraRenderingPath.GPUDeferred;
         private List<RenderTexture> temporaryTextures = new List<RenderTexture>(15);
-        public Dictionary<PipelineEvent, IPerCameraData> postDatas = new Dictionary<PipelineEvent, IPerCameraData>();
+        public Dictionary<Type, IPerCameraData> postDatas = new Dictionary<Type, IPerCameraData>(47);
         void Awake()
         {
             cam = GetComponent<Camera>();

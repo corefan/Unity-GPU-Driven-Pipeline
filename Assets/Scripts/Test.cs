@@ -5,9 +5,8 @@ using UnityEngine;
 public class Test : MonoBehaviour
 {
     [EasyButtons.Button]
-    void ss()
+    void Try()
     {
-        Plane p = new Plane(Vector3.zero, Vector3.right, Vector3.one);
-        Debug.Log(p.normal);
+        Debug.Log(SystemInfo.supportsAsyncCompute);
     }
 }

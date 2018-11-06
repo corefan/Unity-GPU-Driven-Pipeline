@@ -113,6 +113,53 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &300124627
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 300124629}
+  - component: {fileID: 300124628}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &300124628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300124627}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bc98792b41dcad4b862fea31c3c7022, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  useShadow: 1
+  range: 50
+  color: {r: 0, g: 1, b: 0.034408808, a: 1}
+  intensity: 100
+--- !u!4 &300124629
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 300124627}
+  m_LocalRotation: {x: -0.02931205, y: 0.7850312, z: -0.037255444, w: -0.6176398}
+  m_LocalPosition: {x: 17.506823, y: 3.1918592, z: -7.3665195}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 5
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &582523566
 GameObject:
   m_ObjectHideFlags: 0
@@ -243,7 +290,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7d03bb786d57c3c4db2c26301cedb05b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_enabledInPipeline: 1
+  m_enabledInPipeline: 0
   m_enableBeforePipeline: 0
   layer: 2010
   shader: {fileID: 7200000, guid: be4e5ea3c383b0f4bb8190e40fa77d0a, type: 3}
@@ -276,8 +323,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c316160fe9172fc46bb29f82936d9945, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_enabledInPipeline: 0
-  m_enableBeforePipeline: 0
+  m_enabledInPipeline: 1
+  m_enableBeforePipeline: 1
   layer: 2040
 --- !u!1 &934917473
 GameObject:
@@ -310,9 +357,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f2e77740a6ce204a95eef1257962171, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fileName: testModel
-  testMat: {fileID: 0}
-  clear: 1
 --- !u!23 &934917476
 MeshRenderer:
   m_ObjectHideFlags: 0

@@ -1,52 +1,59 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using System;
+﻿using System;
 namespace MPipeline
 {
     public abstract class IPerCameraData
     {
-        public static IPerCameraData GetProperty(PipelineEvent targetEvent, PipelineCamera camera, Func<IPerCameraData> initFunc)
+        public static T GetProperty<T>(PipelineCamera camera, Func<IPerCameraData> initFunc) where T : IPerCameraData
         {
             IPerCameraData data;
-            if (!camera.postDatas.TryGetValue(targetEvent, out data))
+            if (!camera.postDatas.TryGetValue(typeof(T), out data))
             {
                 data = initFunc();
-                camera.postDatas.Add(targetEvent, data);
+                camera.postDatas.Add(typeof(T), data);
             }
-            return data;
+            return (T)data;
         }
 
-        public static IPerCameraData GetProperty(PipelineEvent targetEvent, PipelineCamera camera, Func<PipelineCamera, IPerCameraData> initFunc)
+        public static bool GetProperty<T>(PipelineCamera camera, out IPerCameraData data)
+        {
+            return camera.postDatas.TryGetValue(typeof(T), out data);
+        }
+
+        public static void RemoveProperty<T>(PipelineCamera camera)
+        {
+            camera.postDatas.Remove(typeof(T));
+        }
+
+        public static T GetProperty<T>(PipelineCamera camera, Func<PipelineCamera, IPerCameraData> initFunc) where T : IPerCameraData
         {
             IPerCameraData data;
-            if (!camera.postDatas.TryGetValue(targetEvent, out data))
+            if (!camera.postDatas.TryGetValue(typeof(T), out data))
             {
                 data = initFunc(camera);
-                camera.postDatas.Add(targetEvent, data);
+                camera.postDatas.Add(typeof(T), data);
             }
-            return data;
+            return (T)data;
         }
 
-        public static IPerCameraData GetProperty(PipelineEvent targetEvent, PipelineCamera camera, PipelineResources resource, Func<PipelineCamera, PipelineResources, IPerCameraData> initFunc)
+        public static T GetProperty<T>(PipelineCamera camera, PipelineResources resource, Func<PipelineCamera, PipelineResources, IPerCameraData> initFunc) where T : IPerCameraData
         {
             IPerCameraData data;
-            if (!camera.postDatas.TryGetValue(targetEvent, out data))
+            if (!camera.postDatas.TryGetValue(typeof(T), out data))
             {
                 data = initFunc(camera, resource);
-                camera.postDatas.Add(targetEvent, data);
+                camera.postDatas.Add(typeof(T), data);
             }
-            return data;
+            return (T)data;
         }
-        public static IPerCameraData GetProperty(PipelineEvent targetEvent, PipelineCamera camera, PipelineResources resource, Func<PipelineResources, IPerCameraData> initFunc)
+        public static T GetProperty<T>(PipelineCamera camera, PipelineResources resource, Func<PipelineResources, IPerCameraData> initFunc) where T : IPerCameraData
         {
             IPerCameraData data;
-            if (!camera.postDatas.TryGetValue(targetEvent, out data))
+            if (!camera.postDatas.TryGetValue(typeof(T), out data))
             {
                 data = initFunc(resource);
-                camera.postDatas.Add(targetEvent, data);
+                camera.postDatas.Add(typeof(T), data);
             }
-            return data;
+            return (T)data;
         }
         public abstract void DisposeProperty();
     }

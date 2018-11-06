@@ -33,10 +33,19 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
         data->allocator = alloc;
         data->ptr = UnsafeUtility.Malloc(sizeof(T) * count, 16, alloc);
         T* add = (T*)data->ptr;
-        for(int i = 0; i < count; ++i)
+        for (int i = 0; i < count; ++i)
         {
             add[i] = defaultValue;
         }
+    }
+
+    public NativeList(int count, int capacity, Allocator alloc)
+    {
+        data = (NativeListData*)UnsafeUtility.Malloc(sizeof(NativeListData), 16, alloc);
+        data->count = count;
+        data->capacity = capacity;
+        data->allocator = alloc;
+        data->ptr = UnsafeUtility.Malloc(sizeof(T) * capacity, 16, alloc);
     }
     public Allocator allocator
     {
@@ -91,6 +100,24 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
         }
     }
 
+    public void AddRange(int length)
+    {
+        data->count += length;
+        Resize();
+    }
+
+    public void AddRange(T[] array)
+    {
+        int last = data->count;
+        data->count += array.Length;
+        Resize();
+        fixed(void* source = &array[0])
+        {
+            void* dest = unsafePtr + last;
+            UnsafeUtility.MemCpy(dest, source, array.Length * sizeof(T));
+        }
+    }
+
     public bool ConcurrentAdd(T value)
     {
         int last = Interlocked.Increment(ref data->count);
@@ -126,9 +153,9 @@ public unsafe struct NativeList<T> : IEnumerable<T> where T : unmanaged
         //Concurrent Resize
         if (last > data->capacity)
         {
-            lock(lockerObj)
+            lock (lockerObj)
             {
-                if(last > data->capacity)
+                if (last > data->capacity)
                 {
                     int newCapacity = data->capacity * 2;
                     void* newPtr = UnsafeUtility.Malloc(sizeof(T) * newCapacity, 16, data->allocator);

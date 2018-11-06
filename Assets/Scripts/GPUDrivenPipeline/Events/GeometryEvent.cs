@@ -32,7 +32,7 @@ namespace MPipeline
         public Material proceduralMaterial;
         public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            HizOcclusionData hizData = IPerCameraData.GetProperty(this, cam, getOcclusionData) as HizOcclusionData;
+            HizOcclusionData hizData = IPerCameraData.GetProperty<HizOcclusionData>(cam, getOcclusionData);
             ref var baseBuffer = ref data.baseBuffer;
             var gpuFrustumShader = data.resources.gpuFrustumCulling;
             Graphics.SetRenderTarget(cam.targets.geometryColorBuffer, cam.targets.depthBuffer);

@@ -40,12 +40,6 @@ namespace MPipeline
             {
                 PipelineFunctions.DrawShadow(cam.cam, data.resources.gpuFrustumCulling, ref data.arrayCollection, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
                 PipelineFunctions.UpdateShadowMaskState(shadMaskMaterial, ref SunLight.shadMap, cascadeShadowMapVP);
-                /*   CheckTex(data.cam);
-                   Graphics.SetRenderTarget(volumetricTex);
-                   GL.Clear(false, true, Color.black);
-                   shadMaskMaterial.SetPass(2);
-                   Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
-                   Graphics.Blit(volumetricTex, data.targets.renderTarget);*/
                 pass = 0;
             }
             else

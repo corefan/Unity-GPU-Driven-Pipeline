@@ -1,4 +1,4 @@
-﻿  #if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Collections;
@@ -90,37 +90,10 @@ namespace MPipeline
 
     public unsafe class ClusterGenerator : MonoBehaviour
     {
-        private Mesh testMesh;
-        public string fileName = "testModel";
-        public Material testMat;
-        public bool clear = true;
-        [EasyButtons.Button]
-        private void GenerateCluster()
+        public static void GenerateCluster(NativeList<Point> pointsFromMesh, NativeList<int> triangles, Vector3[] vert, Bounds bd, string fileName)
         {
-            testMesh = GetComponent<MeshFilter>().sharedMesh;
-            Vector3[] verticesMesh = testMesh.vertices;
-            Vector3[] normalsMesh = testMesh.normals;
-            Vector2[] uv = testMesh.uv;
-            Vector4[] tangents = testMesh.tangents;
-            NativeArray<Point> pointsFromMesh = new NativeArray<Point>(verticesMesh.Length, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            Matrix4x4 localToWorld = transform.localToWorldMatrix;
-            for(int i = 0; i < pointsFromMesh.Length; ++i)
-            {
-                Vector3 vertex = localToWorld.MultiplyPoint3x4(verticesMesh[i]);
-                Vector4 tangent = localToWorld.MultiplyVector(tangents[i]);
-                Vector3 normal = localToWorld.MultiplyVector(normalsMesh[i]);
-                tangent.w = tangents[i].w;
-                Point p;
-                p.tangent = tangent;
-                p.normal = normal;
-                p.vertex = vertex;
-                p.texcoord = uv[i];
-                p.texcoord.z = Random.Range(0f, 1f);
-                pointsFromMesh[i] = p;
-            }
-            List<Vector4Int> value = ClusterFunctions.AddTrianglesToDictionary(testMesh.triangles);
-            Bounds bd = testMesh.bounds;
-            GetFragmentJob gt = new GetFragmentJob(bd.center, bd.extents, testMesh.vertices, value);
+            List<Vector4Int> value = ClusterFunctions.AddTrianglesToDictionary(triangles);
+            GetFragmentJob gt = new GetFragmentJob(bd.center, bd.extents, vert, value);
             (gt.Schedule(value.Count, 16)).Complete();
             var voxel = GetFragmentJob.voxelFragments;
             const int VoxelCount = ClusterFunctions.VoxelCount;
@@ -143,7 +116,7 @@ namespace MPipeline
             BREAK:
             NativeArray<Fragment> resultCluster;
             List<NativeArray<Fragment>> allFragments = new List<NativeArray<Fragment>>();
-            
+
             LOOP:
             bool stillLooping = ClusterFunctions.GetFragFromVoxel(voxel, first.position, inputPoint, out resultCluster);
             List<Vector3> vertices = new List<Vector3>(16 * 6);
@@ -154,14 +127,14 @@ namespace MPipeline
                 allFragments.Add(resultCluster);
                 goto LOOP;
             }
-            if(resultCluster.Length < (ClusterFunctions.ClusterCount + 1))
+            if (resultCluster.Length < (ClusterFunctions.ClusterCount + 1))
             {
                 NativeArray<Fragment> lastResultCluster = new NativeArray<Fragment>(ClusterFunctions.ClusterCount + 1, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-                for(int i = 0; i < resultCluster.Length;++i)
+                for (int i = 0; i < resultCluster.Length; ++i)
                 {
                     lastResultCluster[i] = resultCluster[i];
                 }
-                for(int i = resultCluster.Length; i < lastResultCluster.Length; ++i)
+                for (int i = resultCluster.Length; i < lastResultCluster.Length; ++i)
                 {
                     Fragment fg;
                     fg.indices = new Vector4Int(0, 0, 0, 0);
@@ -191,10 +164,10 @@ namespace MPipeline
             CollectJob.allFragments = null;
             CollectJob.pointsArray = null;
             NativeArray<Point> pointsList = new NativeArray<Point>(pointCount, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
-            for(int i = 0, pointsCount = 0; i < allpoints.Length; ++i)
+            for (int i = 0, pointsCount = 0; i < allpoints.Length; ++i)
             {
                 var current = allpoints[i];
-                for(int a = 0; a < current.Length; ++a)
+                for (int a = 0; a < current.Length; ++a)
                 {
                     pointsList[pointsCount] = current[a];
                     pointsCount++;
@@ -213,10 +186,33 @@ namespace MPipeline
             meshData.Dispose();
             pointsList.Dispose();
             pointsFromMesh.Dispose();
-            foreach(var i in allFragments)
+            foreach (var i in allFragments)
             {
                 i.Dispose();
             }
+        }
+        public static NativeList<Point> GetPoints(Mesh testMesh, Matrix4x4 localToWorld)
+        {
+            Vector3[] verticesMesh = testMesh.vertices;
+            Vector3[] normalsMesh = testMesh.normals;
+            Vector2[] uv = testMesh.uv;
+            Vector4[] tangents = testMesh.tangents;
+            NativeList<Point> pointsFromMesh = new NativeList<Point>(verticesMesh.Length, verticesMesh.Length, Allocator.Temp);
+            for (int i = 0; i < pointsFromMesh.Length; ++i)
+            {
+                Vector3 vertex = localToWorld.MultiplyPoint3x4(verticesMesh[i]);
+                Vector4 tangent = localToWorld.MultiplyVector(tangents[i]);
+                Vector3 normal = localToWorld.MultiplyVector(normalsMesh[i]);
+                tangent.w = tangents[i].w;
+                Point p;
+                p.tangent = tangent;
+                p.normal = normal;
+                p.vertex = vertex;
+                p.texcoord = uv[i];
+                p.texcoord.z = Random.Range(0f, 1f);
+                pointsFromMesh[i] = p;
+            }
+            return pointsFromMesh;
         }
     }
     #region STRUCT
@@ -252,11 +248,11 @@ namespace MPipeline
             pointBytes = new byte[points.Length * sizeof(Point)];
             void* meshDataPtr = meshdata.GetUnsafePtr();
             void* pointsPtr = points.GetUnsafePtr();
-            fixed(void* destination = &meshBytes[0])
+            fixed (void* destination = &meshBytes[0])
             {
                 UnsafeUtility.MemCpy(destination, meshDataPtr, meshBytes.Length);
             }
-            fixed(void* destination = &pointBytes[0])
+            fixed (void* destination = &pointBytes[0])
             {
                 UnsafeUtility.MemCpy(destination, pointsPtr, pointBytes.Length);
             }
@@ -291,7 +287,7 @@ namespace MPipeline
             currentTarget.Dispose();
             return false;
         }
-        public static List<Vector4Int> AddTrianglesToDictionary(int[] triangleArray)
+        public static List<Vector4Int> AddTrianglesToDictionary(NativeList<int> triangleArray)
         {
             List<Vector4Int> allClusters = new List<Vector4Int>();
             Dictionary<Vector2Int, int> dict = new Dictionary<Vector2Int, int>();
@@ -467,7 +463,7 @@ namespace MPipeline
         public static List<NativeArray<Fragment>> allFragments;
         public static NativeArray<ClusterMeshData> meshDatas;
         public static NativeArray<Point>[] pointsArray;
-        public static NativeArray<Point> pointsFromMesh;
+        public static NativeList<Point> pointsFromMesh;
         public void Execute(int index)
         {
             NativeArray<Fragment> fragments = allFragments[index];
@@ -479,7 +475,7 @@ namespace MPipeline
                 int* indices = (int*)&fragPtr[i].indices;
                 for (int a = 0; a < 4; ++a)
                 {
-                    Point p = pointsFromMesh[indices[a]];
+                    ref Point p = ref pointsFromMesh[indices[a]];
                     allPoints[pointCount] = p;
                     pointCount++;
                 }

@@ -43,17 +43,6 @@ namespace MPipeline
                 finalizerAction += () => ColorGradingFunction.Finalize(ref colorGradingData, sharedData.uberMaterial);
                 renderAction += (ref PipelineCommandData useless) => ColorGradingFunction.PrepareRender(ref colorGradingData, ref sharedData);
             }
-            /*
-            if (allSettings.TryGetValue(typeof(MotionBlur), out currentSetting))
-            {
-                MotionBlur settings = currentSetting as MotionBlur;
-                motionBlurData.motionBlurMat = new Material(resources.shaders.motionBlur);
-                motionBlurData.resetHistory = true;
-                motionBlurData.settings = settings;
-                finalizerAction += () => Destroy(motionBlurData.motionBlurMat);
-                PostProcessAction motionBlurAction = (ref PipelineCommandData data, RenderTexture source, RenderTexture dest) => MotionBlurFunction.Render(ref sharedData, ref motionBlurData, source, dest);
-                renderAction += (ref PipelineCommandData commandData) => PostFunctions.RunPostProcess(ref commandData, motionBlurAction);
-            }*/
         }
 
         protected override void Dispose()

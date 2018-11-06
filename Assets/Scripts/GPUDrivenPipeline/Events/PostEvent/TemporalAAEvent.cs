@@ -52,7 +52,7 @@ namespace MPipeline
 
         public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
         {
-            HistoryTexture texComponent = IPerCameraData.GetProperty(this, cam, GetHistoryTex) as HistoryTexture;
+            HistoryTexture texComponent = IPerCameraData.GetProperty<HistoryTexture>(cam, GetHistoryTex);
             texComponent.UpdateProperty(cam);
             SetHistory(cam.cam, ref texComponent.historyTex, cam.targets.renderTarget);
             historyTex = texComponent.historyTex;
@@ -66,7 +66,7 @@ namespace MPipeline
             taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
             PostFunctions.RunPostProcess(ref cam.targets, ref data, taaFunction);
         }
-        
+
         public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
         {
             cam.cam.ResetProjectionMatrix();
@@ -141,7 +141,7 @@ namespace MPipeline
         {
             int camWidth = camera.cam.pixelWidth;
             int camHeight = camera.cam.pixelHeight;
-            if(historyTex.width != camWidth || historyTex.height != camHeight)
+            if (historyTex.width != camWidth || historyTex.height != camHeight)
             {
                 historyTex.Release();
                 Object.Destroy(historyTex);
