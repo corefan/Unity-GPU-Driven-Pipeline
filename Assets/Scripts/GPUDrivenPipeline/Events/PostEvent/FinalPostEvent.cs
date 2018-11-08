@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
 using PostProcessing = UnityEngine.Rendering.PostProcessing;
 using Functional;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(false, true)]
@@ -19,17 +20,17 @@ namespace MPipeline
         private MotionBlurData motionBlurData;
         private Dictionary<Type, PostProcessEffectSettings> allSettings = new Dictionary<Type, PostProcessEffectSettings>(7);
         private PostProcessAction uberAction;
+        private MaterialPropertyBlock uberBlock;
         protected override void Init(PipelineResources res)
         {
+            uberBlock = new MaterialPropertyBlock();
             finalizerAction = null;
             renderAction = null;
             PostFunctions.InitSharedData(ref sharedData, resources);
-            uberAction = (ref PipelineCommandData data, RenderTexture source, RenderTexture dest) =>
+            uberAction = (ref PipelineCommandData data, CommandBuffer buffer, RenderTexture source, RenderTexture dest) =>
             {
-                Graphics.SetRenderTarget(dest);
-                sharedData.uberMaterial.SetTexture(ShaderIDs._MainTex, source);
-                sharedData.uberMaterial.SetPass(0);
-                Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
+                buffer.SetRenderTarget(dest);
+                buffer.BlitSRT(uberBlock, source, dest, sharedData.uberMaterial, 0);
             };
             var settingList = profile.settings;
             foreach (var i in settingList)
@@ -52,7 +53,7 @@ namespace MPipeline
             allSettings.Clear();
         }
 
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             sharedData.autoExposureTexture = RuntimeUtilities.whiteTexture;
             sharedData.screenSize = new Vector2Int(cam.cam.pixelWidth, cam.cam.pixelHeight);
@@ -63,7 +64,7 @@ namespace MPipeline
                 sharedData.keywordsTransformed = false;
                 sharedData.uberMaterial.shaderKeywords = sharedData.shaderKeywords.ToArray();
             }
-            PostFunctions.RunPostProcess(ref cam.targets, ref data, uberAction);
+            PostFunctions.RunPostProcess(ref cam.targets, buffer, ref data, uberAction);
             PipelineFunctions.ReleaseRenderTarget(sharedData.temporalRT);
         }
     }

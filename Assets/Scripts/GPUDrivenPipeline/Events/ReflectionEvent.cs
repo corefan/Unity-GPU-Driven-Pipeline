@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using UnityEngine.Rendering;
 using Unity.Collections.LowLevel.Unsafe;
 namespace MPipeline
 {
@@ -14,10 +15,12 @@ namespace MPipeline
         private ulong gcHandler;
         private ReflectionCullJob cullJob;
         private JobHandle cullJobHandler;
+        private MaterialPropertyBlock block;
 
         protected override void Init(PipelineResources resources)
         {
             reflectMaterial = new Material(resources.reflectionShader);
+            block = new MaterialPropertyBlock();
         }
 
         protected override void Dispose()
@@ -25,25 +28,24 @@ namespace MPipeline
             Destroy(reflectMaterial);
         }
 
-        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
+        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             cullJob.planes = (Vector4*)UnsafeUtility.PinGCArrayAndGetDataAddress(data.arrayCollection.frustumPlanes, out gcHandler);
             cullJob.resultIndices = new NativeList<int>(ReflectionCube.allCubes.Count, Allocator.Temp);
             cullJobHandler = cullJob.Schedule(ReflectionCube.allCubes.Count, 32);
         }
 
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
-            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
+            buffer.SetRenderTarget(cam.targets.renderTargetIdentifier, cam.targets.depthIdentifier);
             cullJobHandler.Complete();
             UnsafeUtility.ReleaseGCObject(gcHandler);
             //Use Result Indices
             foreach(int i in cullJob.resultIndices)
             {
                 ReflectionCube cube = ReflectionCube.allCubes[i];
-                reflectMaterial.SetTexture(_ReflectionProbe, cube.reflectionCube);
-                reflectMaterial.SetPass(0);
-                Graphics.DrawMeshNow(GraphicsUtility.cubeMesh, cube.localToWorld);
+                block.SetTexture(_ReflectionProbe, cube.reflectionCube);
+                buffer.DrawMesh(GraphicsUtility.cubeMesh, cube.localToWorld, reflectMaterial, 0, 0, block);
             }
             //TODO
             cullJob.resultIndices.Dispose();

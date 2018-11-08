@@ -90,10 +90,10 @@ namespace MPipeline
 
     public unsafe class ClusterGenerator : MonoBehaviour
     {
-        public static void GenerateCluster(NativeList<Point> pointsFromMesh, NativeList<int> triangles, Vector3[] vert, Bounds bd, string fileName)
+        public static void GenerateCluster(NativeList<Point> pointsFromMesh, NativeList<int> triangles, Bounds bd, string fileName)
         {
             List<Vector4Int> value = ClusterFunctions.AddTrianglesToDictionary(triangles);
-            GetFragmentJob gt = new GetFragmentJob(bd.center, bd.extents, vert, value);
+            GetFragmentJob gt = new GetFragmentJob(bd.center, bd.extents, pointsFromMesh, value);
             (gt.Schedule(value.Count, 16)).Complete();
             var voxel = GetFragmentJob.voxelFragments;
             const int VoxelCount = ClusterFunctions.VoxelCount;
@@ -186,17 +186,21 @@ namespace MPipeline
             meshData.Dispose();
             pointsList.Dispose();
             pointsFromMesh.Dispose();
+            triangles.Dispose();
             foreach (var i in allFragments)
             {
                 i.Dispose();
             }
         }
-        public static NativeList<Point> GetPoints(Mesh testMesh, Matrix4x4 localToWorld)
+        public static NativeList<Point> GetPoints(Mesh testMesh, Matrix4x4 localToWorld, out NativeList<int> triangles)
         {
             Vector3[] verticesMesh = testMesh.vertices;
             Vector3[] normalsMesh = testMesh.normals;
             Vector2[] uv = testMesh.uv;
             Vector4[] tangents = testMesh.tangents;
+            int[] tri = testMesh.triangles;
+            triangles = new NativeList<int>(tri.Length, Allocator.Temp);
+            triangles.AddRange(tri);
             NativeList<Point> pointsFromMesh = new NativeList<Point>(verticesMesh.Length, verticesMesh.Length, Allocator.Temp);
             for (int i = 0; i < pointsFromMesh.Length; ++i)
             {
@@ -209,10 +213,18 @@ namespace MPipeline
                 p.normal = normal;
                 p.vertex = vertex;
                 p.texcoord = uv[i];
-                p.texcoord.z = Random.Range(0f, 1f);
+                p.objIndex = 0;
                 pointsFromMesh[i] = p;
             }
             return pointsFromMesh;
+        }
+        [EasyButtons.Button]
+        public void Generate()
+        {
+            NativeList<int> tri;
+            Mesh m = GetComponent<MeshFilter>().sharedMesh;
+            var point = GetPoints(m, transform.localToWorldMatrix, out tri);
+            GenerateCluster(point, tri, GetComponent<MeshRenderer>().bounds, "TestFile");
         }
     }
     #region STRUCT
@@ -321,12 +333,12 @@ namespace MPipeline
             return new Vector3Int((int)result.x, (int)result.y, (int)result.z);
         }
 
-        public static void SetPointToVoxel(Vector4Int points, Vector3[] vertices, List<Fragment>[,,] voxel, Vector3 leftPoint, Vector3 extent)
+        public static void SetPointToVoxel(Vector4Int points, NativeList<Point> allPoints, List<Fragment>[,,] voxel, Vector3 leftPoint, Vector3 extent)
         {
-            Vector3 position = vertices[points.x]
-                               + vertices[points.y]
-                               + vertices[points.z]
-                               + vertices[points.w];
+            Vector3 position = allPoints[points.x].vertex
+                               + allPoints[points.y].vertex
+                               + allPoints[points.z].vertex
+                               + allPoints[points.w].vertex;
             position /= 4;
             Vector3 distToLeft = position - leftPoint;
             Vector3Int voxelIndex = GetVoxel(distToLeft, extent);
@@ -425,14 +437,14 @@ namespace MPipeline
     }
     public unsafe struct GetFragmentJob : IJobParallelFor
     {
-        public static Vector3[] vertices;
+        public static NativeList<Point> allPoint;
         public static List<Vector4Int> fragments;
         public static List<Fragment>[,,] voxelFragments;
         public static Vector3 leftPoint;
         public static Vector3 distance;
-        public GetFragmentJob(Vector3 position, Vector3 extent, Vector3[] vert, List<Vector4Int> frag)
+        public GetFragmentJob(Vector3 position, Vector3 extent, NativeList<Point> allpt,  List<Vector4Int> frag)
         {
-            vertices = vert;
+            allPoint = allpt;
             fragments = frag;
             leftPoint = position - extent;
             distance = extent * 2;
@@ -447,7 +459,7 @@ namespace MPipeline
         }
         public void Dispose()
         {
-            vertices = null;
+            allPoint.Dispose();
             fragments = null;
             voxelFragments = null;
             GC.Collect();
@@ -455,7 +467,7 @@ namespace MPipeline
 
         public void Execute(int index)
         {
-            ClusterFunctions.SetPointToVoxel(fragments[index], vertices, voxelFragments, leftPoint, distance);
+            ClusterFunctions.SetPointToVoxel(fragments[index], allPoint, voxelFragments, leftPoint, distance);
         }
     }
     public unsafe struct CollectJob : IJobParallelFor

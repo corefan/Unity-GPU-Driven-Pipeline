@@ -13,7 +13,6 @@ public static partial class ShaderIDs
     public static readonly int _LastVp = Shader.PropertyToID("_LastVp");
     public static readonly int _ShadowMapVP = Shader.PropertyToID("_ShadowMapVP");
     public static readonly int _ShadowMapVPs = Shader.PropertyToID("_ShadowMapVPs");
-    public static readonly int _ShadowCamPos = Shader.PropertyToID("_ShadowCamPos");
     public static readonly int _ShadowCamPoses = Shader.PropertyToID("_ShadowCamPoses");
     public static readonly int _ShadowDisableDistance = Shader.PropertyToID("_ShadowDisableDistance");
     public static readonly int _LightFinalColor = Shader.PropertyToID("_LightFinalColor");

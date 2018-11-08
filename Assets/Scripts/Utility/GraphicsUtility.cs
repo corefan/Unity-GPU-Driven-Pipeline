@@ -134,6 +134,13 @@ new Vector3(1f, 0f, 0f)
         buffer.DrawMesh(mesh, Matrix4x4.identity, mat, 0, pass);
     }//Use This
 
+    public static void BlitSRT(this CommandBuffer buffer, MaterialPropertyBlock block, RenderTexture source, RenderTexture destination, Material mat, int pass)
+    {
+        block.SetTexture(ShaderIDs._MainTex, source);
+        buffer.SetRenderTarget(destination);
+        buffer.DrawMesh(mesh, Matrix4x4.identity, mat, 0, pass, block);
+    }//Use This
+
     public static void BlitStencil(this CommandBuffer buffer, RenderTargetIdentifier colorSrc, RenderTargetIdentifier colorBuffer, RenderTargetIdentifier depthStencilBuffer, Material mat, int pass)
     {
         buffer.SetGlobalTexture(ShaderIDs._MainTex, colorSrc);
@@ -145,42 +152,5 @@ new Vector3(1f, 0f, 0f)
     {
         buffer.SetRenderTarget(colorBuffer, depthStencilBuffer);
         buffer.DrawMesh(mesh, Matrix4x4.identity, mat, 0, pass);
-    }
-
-    public static void Blit(this Material mat, RenderTexture source, RenderBuffer destColor, RenderBuffer destDepth, int pass)
-    {
-        Graphics.SetRenderTarget(destColor, destDepth);
-        mat.SetTexture(ShaderIDs._MainTex, source);
-        mat.SetPass(pass);
-        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-    }
-
-    public static void Blit(this Material mat, RenderTexture source, RenderTexture dest, int pass)
-    {
-        Graphics.SetRenderTarget(dest);
-        mat.SetTexture(ShaderIDs._MainTex, source);
-        mat.SetPass(pass);
-        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-    }
-
-    public static void Blit(this Material mat, RenderBuffer destColor, RenderBuffer destDepth, int pass)
-    {
-        Graphics.SetRenderTarget(destColor, destDepth);
-        mat.SetPass(pass);
-        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-    }
-
-    public static void Blit(this Material mat, RenderBuffer[] destColor, RenderBuffer destDepth, int pass)
-    {
-        Graphics.SetRenderTarget(destColor, destDepth);
-        mat.SetPass(pass);
-        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
-    }
-
-    public static void Blit(this Material mat, RenderTexture dest, int pass)
-    {
-        Graphics.SetRenderTarget(dest);
-        mat.SetPass(pass);
-        Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
     }
 }

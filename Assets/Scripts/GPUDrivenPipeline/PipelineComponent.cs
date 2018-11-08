@@ -130,6 +130,7 @@ public struct ShadowMapComponent
 {
     public OrthoCam shadCam;
     public Material shadowDepthMaterial;
+    public MaterialPropertyBlock block;
     public RenderTexture shadowmapTexture;
     public NativeArray<Vector3> frustumCorners;
     public NativeArray<AspectInfo> shadowFrustumPlanes;
@@ -141,7 +142,8 @@ public struct Point
     public Vector3 vertex;
     public Vector4 tangent;
     public Vector3 normal;
-    public Vector3 texcoord;
+    public Vector2 texcoord;
+    public uint objIndex;
 }
 [System.Serializable]
 public struct ClusterMeshData
@@ -246,9 +248,10 @@ public struct RenderTargets
     public RenderTexture renderTarget;
     public RenderTexture backupTarget;
     public RenderTexture[] gbufferTextures;
-    public RenderBuffer[] geometryColorBuffer;
-    public RenderBuffer depthBuffer;
-    public RenderBuffer colorBuffer;
+    public RenderTargetIdentifier[] gbufferIdentifier;
+    public RenderTargetIdentifier renderTargetIdentifier;
+    public RenderTargetIdentifier backupIdentifier;
+    public RenderTargetIdentifier depthIdentifier;
     public int[] gbufferIndex;
     public static RenderTargets Init()
     {
@@ -262,25 +265,26 @@ public struct RenderTargets
                 Shader.PropertyToID("_CameraMotionVectorsTexture"),
                 Shader.PropertyToID("_CameraDepthTexture")
         };
-        rt.colorBuffer = default;
+        rt.gbufferIdentifier = new RenderTargetIdentifier[6];
         rt.gbufferTextures = new RenderTexture[6];
-        rt.geometryColorBuffer = new RenderBuffer[6];
-        rt.depthBuffer = default;
         rt.renderTarget = null;
         rt.backupTarget = null;
+        rt.backupIdentifier = default;
+        rt.depthIdentifier = default;
+        rt.renderTargetIdentifier = default;
         return rt;
     }
-    public RenderTexture depthTexture
+    public RenderTargetIdentifier depthTexture
     {
-        get { return gbufferTextures[5]; }
+        get { return new RenderTargetIdentifier(gbufferTextures[5]); }
     }
-    public RenderTexture motionVectorTexture
+    public RenderTargetIdentifier motionVectorTexture
     {
-        get { return gbufferTextures[4]; }
+        get { return new RenderTargetIdentifier(gbufferTextures[4]); }
     }
-    public RenderTexture normalTexture
+    public RenderTargetIdentifier normalIdentifier
     {
-        get { return gbufferTextures[2]; }
+        get { return new RenderTargetIdentifier(gbufferTextures[2]); }
     }
 }
 

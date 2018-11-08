@@ -22,7 +22,7 @@ namespace MPipeline
             NeighborMax,
             Reconstruction
         }
-
+        /*
         public static void Render(ref PostSharedData context, ref MotionBlurData data, RenderTexture source, RenderTexture dest)
         {
             if (data.resetHistory)
@@ -93,5 +93,6 @@ namespace MPipeline
             RenderTexture.ReleaseTemporary(vbuffer);
             RenderTexture.ReleaseTemporary(neighborMax);
         }
+        */
     }
 }

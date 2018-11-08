@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering.PostProcessing;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(true, true)]
@@ -32,16 +33,18 @@ namespace MPipeline
         private int sampleIndex = 0;
         private const int k_SampleCount = 8;
         private Material taaMat;
+        private MaterialPropertyBlock block;
         private PostProcessAction taaFunction;
         private RenderTexture historyTex;
         private System.Func<PipelineCamera, HistoryTexture> GetHistoryTex = (cam) => new HistoryTexture(cam.cam);
         protected override void Init(PipelineResources resources)
         {
+            block = new MaterialPropertyBlock();
             taaMat = new Material(resources.taaShader);
-            taaFunction = (ref PipelineCommandData data, RenderTexture source, RenderTexture dest) =>
+            taaFunction = (ref PipelineCommandData data, CommandBuffer buffer, RenderTexture source, RenderTexture dest) =>
             {
-                taaMat.Blit(source, dest, 0);
-                Graphics.Blit(dest, historyTex);
+                buffer.BlitSRT(block, source, dest, taaMat, 0);
+                buffer.Blit(dest, historyTex);
             };
         }
 
@@ -50,24 +53,24 @@ namespace MPipeline
             Destroy(taaMat);
         }
 
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             HistoryTexture texComponent = IPerCameraData.GetProperty<HistoryTexture>(cam, GetHistoryTex);
             texComponent.UpdateProperty(cam);
-            SetHistory(cam.cam, ref texComponent.historyTex, cam.targets.renderTarget);
+            SetHistory(cam.cam, buffer, ref texComponent.historyTex, cam.targets.renderTarget);
             historyTex = texComponent.historyTex;
             //TAA Start
             const float kMotionAmplification_Blending = 100f * 60f;
             const float kMotionAmplification_Bounding = 100f * 30f;
-            taaMat.SetVector(ShaderIDs._Jitter, jitter);
-            taaMat.SetFloat(ShaderIDs._Sharpness, sharpness);
-            taaMat.SetVector(ShaderIDs._TemporalClipBounding, new Vector4(stationaryAABBScale, motionAABBScale, kMotionAmplification_Bounding, 0f));
-            taaMat.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification_Blending, 0f));
-            taaMat.SetTexture(ShaderIDs._HistoryTex, historyTex);
-            PostFunctions.RunPostProcess(ref cam.targets, ref data, taaFunction);
+            block.SetVector(ShaderIDs._Jitter, jitter);
+            block.SetFloat(ShaderIDs._Sharpness, sharpness);
+            block.SetVector(ShaderIDs._TemporalClipBounding, new Vector4(stationaryAABBScale, motionAABBScale, kMotionAmplification_Bounding, 0f));
+            block.SetVector(ShaderIDs._FinalBlendParameters, new Vector4(stationaryBlending, motionBlending, kMotionAmplification_Blending, 0f));
+            block.SetTexture(ShaderIDs._HistoryTex, historyTex);
+            PostFunctions.RunPostProcess(ref cam.targets, buffer, ref data, taaFunction);
         }
 
-        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
+        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             cam.cam.ResetProjectionMatrix();
             ConfigureJitteredProjectionMatrix(cam.cam);
@@ -105,13 +108,13 @@ namespace MPipeline
             camera.useJitteredProjectionMatrixForTransparentRendering = false;
         }
 
-        public void SetHistory(Camera cam, ref RenderTexture history, RenderTexture renderTarget)
+        public void SetHistory(Camera cam, CommandBuffer buffer, ref RenderTexture history, RenderTexture renderTarget)
         {
             if (history == null)
             {
                 history = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
                 history.filterMode = FilterMode.Bilinear;
-                Graphics.Blit(renderTarget, history);
+                buffer.Blit(renderTarget, history);
             }
             else if (history.width != cam.pixelWidth || history.height != cam.pixelHeight)
             {
@@ -119,7 +122,7 @@ namespace MPipeline
                 Destroy(history);
                 history = new RenderTexture(cam.pixelWidth, cam.pixelHeight, 0, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
                 history.filterMode = FilterMode.Bilinear;
-                Graphics.Blit(renderTarget, history);
+                buffer.Blit(renderTarget, history);
             }
         }
     }

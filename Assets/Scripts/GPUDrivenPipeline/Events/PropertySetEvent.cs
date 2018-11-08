@@ -1,13 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(false, true)]
     public class PropertySetEvent : PipelineEvent
     {
         private System.Func<PipelineCamera, LastVPData> getLastVP = (c) => new LastVPData(GL.GetGPUProjectionMatrix(c.cam.projectionMatrix, false) * c.cam.worldToCameraMatrix);
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             LastVPData lastData = IPerCameraData.GetProperty<LastVPData>(cam, getLastVP);
             //Calculate Last VP for motion vector and Temporal AA

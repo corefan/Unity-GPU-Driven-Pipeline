@@ -1,19 +1,17 @@
-﻿// Upgrade NOTE: replaced 'mul(UNITY_MATRIX_MVP,*)' with 'UnityObjectToClipPos(*)'
-
- Shader "Maxwell/ProceduralInstance" {
+﻿ Shader "Maxwell/ProceduralInstance" {
 	Properties {
 		_Color ("Color", Color) = (1,1,1,1)
-		_MainTex ("Albedo (RGB)", 2D) = "white" {}
-		_BumpMap("Normal Map", 2D) = "bump" {}
-		_NormalScale("Normal Scale", float) = 1
-		_SpecularMap("Specular Map", 2D) = "white"{}
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
-		_OcclusionMap("Occlusion Map", 2D) = "white"{}
 		_Occlusion("Occlusion Scale", Range(0,1)) = 1
-		_SpecularColor("Specular Color",Color) = (0.2,0.2,0.2,1)
+		_SpecularIntensity("Specular Intensity", Range(0,1)) = 0.3
+		_MetallicIntensity("Metallic Intensity", Range(0, 1)) = 0.1
 		_EmissionColor("Emission Color", Color) = (0,0,0,1)
 		_EmissionMultiplier("Emission Level", Range(1, 20)) = 1
 
+		_MainTex ("Albedo (RGB)", 2D) = "white" {}
+		_BumpMap("Normal Map", 2D) = "bump" {}
+		_SpecularMap("Specular Map", 2D) = "white"{}
+		_OcclusionMap("Occlusion Map", 2D) = "white"{}
 	}
 	SubShader {
 		Tags { "RenderType"="Opaque" }
@@ -35,18 +33,14 @@ CGINCLUDE
 #include "AutoLight.cginc"
 #include "UnityPBSLighting.cginc"
 #include "CGINC/Procedural.cginc"
-#pragma shader_feature USE_NORMAL
-#pragma shader_feature USE_SPECULAR
-#pragma shader_feature USE_OCCLUSION
-#pragma shader_feature USE_ALBEDO
 		struct Input {
 			float2 uv_MainTex;
 		};
 
-    float4 _SpecularColor;
+    float _SpecularIntensity;
+	float _MetallicIntensity;
     float4 _EmissionColor;
 	float _EmissionMultiplier;
-		float _NormalScale;
 		float _Occlusion;
 		float _VertexScale;
 		float _VertexOffset;
@@ -54,7 +48,7 @@ CGINCLUDE
 		sampler2D _SpecularMap;
 		sampler2D _OcclusionMap;
 		sampler2D _MainTex;
-
+		
 
 
 		float _Glossiness;
@@ -64,33 +58,14 @@ CGINCLUDE
 		inline void surf (Input IN, inout SurfaceOutputStandardSpecular o) {
 			// Albedo comes from a texture tinted by color
 			float2 uv = IN.uv_MainTex;// - parallax_mapping(IN.uv_MainTex,IN.viewDir);
-			#if USE_ALBEDO
 			half4 c = tex2D (_MainTex, uv) * _Color;
 			o.Albedo = c.rgb;
 			o.Alpha = c.a;
-			#else
-			o.Albedo = _Color.rgb;
-			o.Alpha = _Color.a;
-			#endif
-			#if USE_OCCLUSION
 			o.Occlusion = lerp(1, tex2D(_OcclusionMap,uv).r, _Occlusion);
-			#else
-			o.Occlusion = 1;
-			#endif
-			#if USE_SPECULAR
-			half4 spec = tex2D(_SpecularMap,uv);
-			o.Specular = _SpecularColor  * spec.rgb;
-			o.Smoothness = _Glossiness * spec.a;
-			#else
-			o.Specular = _SpecularColor;
-			o.Smoothness = _Glossiness;
-			#endif
-			#if USE_NORMAL
+			float3 spec = tex2D(_SpecularMap,uv);
+			o.Specular = lerp(_SpecularIntensity * spec.r, o.Albedo * _SpecularIntensity * spec.r, _MetallicIntensity * spec.g); 
+			o.Smoothness = _Glossiness * spec.b;
 			o.Normal = UnpackNormal(tex2D(_BumpMap,uv));
-			o.Normal.xy *= _NormalScale;
-			#else
-			o.Normal = float3(0,0,1);
-			#endif
 			o.Emission = _EmissionColor * _EmissionMultiplier;
 		}
 
@@ -126,11 +101,12 @@ inline half2 CalculateMotionVector(float4x4 lastvp, half3 worldPos, half2 screen
 
 struct v2f_surf {
   UNITY_POSITION(pos);
-  float3 pack0 : TEXCOORD0; 
+  float2 pack0 : TEXCOORD0; 
   float4 worldTangent : TEXCOORD1;
   float4 worldBinormal : TEXCOORD2;
   float4 worldNormal : TEXCOORD3;
   float3 worldViewDir : TEXCOORD4;
+  nointerpolation uint objectIndex : TEXCOORD5;
 };
 float4 _MainTex_ST;
 v2f_surf vert_surf (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID) 
@@ -138,6 +114,7 @@ v2f_surf vert_surf (uint vertexID : SV_VertexID, uint instanceID : SV_InstanceID
   	Point v = getVertex(vertexID, instanceID);
   	v2f_surf o;
   	o.pack0 = v.texcoord;
+	o.objectIndex = v.objIndex;
   	o.pos = mul(UNITY_MATRIX_VP, float4(v.vertex, 1));
   	o.worldTangent = float4( v.tangent.xyz, v.vertex.x);
 	o.worldNormal =float4(v.normal, v.vertex.z);

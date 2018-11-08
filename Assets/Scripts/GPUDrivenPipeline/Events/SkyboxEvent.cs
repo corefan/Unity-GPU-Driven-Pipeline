@@ -1,17 +1,20 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(false, true)]
     public class SkyboxEvent : PipelineEvent
     {
         public Material skyboxMaterial;
-        public override void FrameUpdate(PipelineCamera camera, ref PipelineCommandData data)
+        public RenderTargetIdentifier[] skyboxIdentifier = new RenderTargetIdentifier[2];
+        public override void FrameUpdate(PipelineCamera camera, ref PipelineCommandData data, CommandBuffer buffer)
         {
-            Graphics.SetRenderTarget(camera.targets.colorBuffer, camera.targets.depthBuffer);
-            skyboxMaterial.SetPass(0);
-            Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
+            skyboxIdentifier[0] = camera.targets.renderTargetIdentifier;
+            skyboxIdentifier[1] = camera.targets.motionVectorTexture;
+            buffer.SetRenderTarget(camera.targets.renderTargetIdentifier, camera.targets.depthIdentifier);
+            buffer.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, skyboxMaterial, 0, 0);
         }
     }
 }

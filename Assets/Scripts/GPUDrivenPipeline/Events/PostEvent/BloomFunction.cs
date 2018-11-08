@@ -56,7 +56,7 @@ namespace MPipeline
             var uberMaterial = sharedData.uberMaterial;
             Object.Destroy(data.bloomMaterial);
         }
-
+        /*
         public static void Render(ref BloomData data, ref PostSharedData context, RenderTexture source)
         {
             if (data.isFastMode != data.settings.fastMode || data.settings.active != data.enabledInUber)
@@ -137,18 +137,7 @@ namespace MPipeline
             var linearColor = settings.color.value.linear;
             float intensity = RuntimeUtilities.Exp2(settings.intensity.value / 10f) - 1f;
             var shaderSettings = new Vector4(sampleScale, intensity, settings.dirtIntensity.value, iterations);
-            /*
-                        // Debug overlays
-                        if (context.IsDebugOverlayEnabled(DebugOverlay.BloomThreshold))
-                        {
-                            context.PushDebugOverlay(cmd, context.source, sheet, (int)Pass.DebugOverlayThreshold);
-                        }
-                        else if (context.IsDebugOverlayEnabled(DebugOverlay.BloomBuffer))
-                        {
-                            uberMaterial.SetVector(PPSShaderIDs.ColorIntensity, new Vector4(linearColor.r, linearColor.g, linearColor.b, intensity));
-                            context.PushDebugOverlay(cmd, m_Pyramid[0].up, sheet, (int)Pass.DebugOverlayTent + qualityOffset);
-                        }
-                        */
+
             // Lens dirtiness
             // Keep the aspect ratio correct & center the dirt texture, we don't want it to be
             // stretched or squashed
@@ -180,6 +169,6 @@ namespace MPipeline
             uberMaterial.SetColor(PPSShaderIDs.Bloom_Color, linearColor);
             uberMaterial.SetTexture(PPSShaderIDs.Bloom_DirtTex, dirtTexture);
             Shader.SetGlobalTexture(PPSShaderIDs.BloomTex, lastUp);
-        }
+        }*/
     }
 }

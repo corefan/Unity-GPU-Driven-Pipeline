@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(false, true)]
@@ -13,9 +14,11 @@ namespace MPipeline
         private static int[] _Count = new int[2];
         private Matrix4x4[] cascadeShadowMapVP = new Matrix4x4[4];
         private Vector4[] shadowFrustumVP = new Vector4[6];
+        private MaterialPropertyBlock lightBlock;
 
         protected override void Init(PipelineResources resources)
         {
+            lightBlock = new MaterialPropertyBlock();
             shadMaskMaterial = new Material(resources.shadowMaskShader);
             for (int i = 0; i < cascadeShadowMapVP.Length; ++i)
             {
@@ -32,25 +35,25 @@ namespace MPipeline
             volumetricTex = null;
         }
 
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             if (SunLight.current == null) return;
             int pass;
+            lightBlock.Clear();
             if (SunLight.current.enableShadow)
             {
-                PipelineFunctions.DrawShadow(cam.cam, data.resources.gpuFrustumCulling, ref data.arrayCollection, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
-                PipelineFunctions.UpdateShadowMaskState(shadMaskMaterial, ref SunLight.shadMap, cascadeShadowMapVP);
+                PipelineFunctions.UpdateShadowMapState(ref SunLight.shadMap, lightBlock, ref SunLight.current.settings, buffer);
+                PipelineFunctions.DrawShadow(cam.cam, data.resources.gpuFrustumCulling, buffer, ref data.baseBuffer, ref SunLight.current.settings, ref SunLight.shadMap, cascadeShadowMapVP, shadowFrustumVP);
+                PipelineFunctions.UpdateShadowMaskState(lightBlock, ref SunLight.shadMap, cascadeShadowMapVP);
                 pass = 0;
             }
             else
             {
                 pass = 1;
             }
-            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
-            Shader.SetGlobalVector(ShaderIDs._LightPos, -SunLight.shadMap.shadCam.forward);
-            shadMaskMaterial.SetPass(pass);
-            Graphics.DrawMeshNow(GraphicsUtility.mesh, Matrix4x4.identity);
-
+            buffer.SetRenderTarget(cam.targets.renderTargetIdentifier, cam.targets.depthIdentifier);
+            buffer.SetGlobalVector(ShaderIDs._LightPos, -SunLight.shadMap.shadCam.forward);
+            buffer.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, shadMaskMaterial, 0, pass, lightBlock);
         }
 
         private void CheckTex(Camera cam)

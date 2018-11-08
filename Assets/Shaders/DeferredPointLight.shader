@@ -59,7 +59,7 @@ ENDCG
                 float3 lightDir = normalize(lightPosition - worldPostion.xyz);
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPostion.xyz);
                 float NoL = saturate(dot(lightDir, worldNormal));
-                half distanceRange = distance(worldPostion, lightPosition);
+                half distanceRange = distance(worldPostion.xyz, lightPosition);
                 half distanceSqr = dot(lightPosition - worldPostion.xyz, lightPosition - worldPostion.xyz);
                 half rangeFalloff = Square(saturate(1 - Square(distanceSqr * Square(abs(1 / _LightPos.w) / 100))));
                 half LumianceIntensity = max(0, (_LightIntensity / 4)) / ((4 * UNITY_PI) * pow(distanceRange, 2));
@@ -91,7 +91,7 @@ ENDCG
                 if(lightDist > shadowDist) return 0;
                 float3 viewDir = normalize(_WorldSpaceCameraPos.xyz - worldPostion.xyz);
                 half NoL = saturate(dot(lightDir, worldNormal));
-                half distanceRange = distance(worldPostion, lightPosition);
+                half distanceRange = distance(worldPostion.xyz, lightPosition);
                 half distanceSqr = dot(lightPosition - worldPostion.xyz, lightPosition - worldPostion.xyz);
                 half rangeFalloff = Square(saturate(1 - Square(distanceSqr * Square(abs(1 / _LightPos.w) / 100))));
                 half LumianceIntensity = max(0, (_LightIntensity / 4)) / ((4 * UNITY_PI) * pow(distanceRange, 2));

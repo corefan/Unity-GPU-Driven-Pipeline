@@ -39,6 +39,7 @@ namespace MPipeline
                 PipelineFunctions.InitRenderTarget(ref targets, cam, temporaryTextures);
                 RenderPipeline.singleton.Render(renderingPath, this, destination);
                 PipelineFunctions.ReleaseRenderTarget(temporaryTextures);
+               
             }
             else
             {

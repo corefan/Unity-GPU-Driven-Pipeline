@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     public abstract class PipelineEvent : MonoBehaviour
@@ -170,7 +171,7 @@ namespace MPipeline
         }
         protected virtual void Init(PipelineResources resources) { }
         protected virtual void Dispose() { }
-        public virtual void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data) { }
-        public virtual void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data) { }
+        public virtual void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer) { }
+        public virtual void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer) { }
     }
 }

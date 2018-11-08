@@ -5,6 +5,7 @@ using Unity.Jobs;
 using System.Threading;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 namespace MPipeline
 {
     [PipelineEvent(true, true)]
@@ -21,8 +22,10 @@ namespace MPipeline
         private CubeCullingBuffer cubeBuffer;
         private int shadowCount = 0;
         private int unShadowCount = 0;
+        private MaterialPropertyBlock block;
         protected override void Init(PipelineResources resources)
         {
+            block = new MaterialPropertyBlock();
             cubeBuffer = new CubeCullingBuffer();
             CubeFunction.Init(ref cubeBuffer);
             pointLightMaterial = new Material(resources.pointLightShader);
@@ -45,7 +48,7 @@ namespace MPipeline
             indirect.Dispose();
         }
 
-        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data)
+        public override void PreRenderFrame(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
             cullJob.planes = (Vector4*)UnsafeUtility.PinGCArrayAndGetDataAddress(data.arrayCollection.frustumPlanes, out gcHandler);
             indicesArray = new NativeArray<int>(MPointLight.allPointLights.Count, Allocator.Temp);
@@ -58,22 +61,21 @@ namespace MPipeline
             cullJobHandler = cullJob.Schedule(MPointLight.allPointLights.Count, 32);
         }
 
-        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data)
+        public override void FrameUpdate(PipelineCamera cam, ref PipelineCommandData data, CommandBuffer buffer)
         {
 
             cullJobHandler.Complete();
             UnsafeUtility.ReleaseGCObject(gcHandler);
             pointLightMaterial.SetBuffer(ShaderIDs.verticesBuffer, sphereBuffer);
             //Un Shadow Point light
-            Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
+            buffer.SetRenderTarget(cam.targets.renderTargetIdentifier, cam.targets.depthIdentifier);
             for (int c = 0; c < unShadowCount; c++) {
                 var i = cullJob.indices[cullJob.length - c];
                 MPointLight light = MPointLight.allPointLights[i];
-                pointLightMaterial.SetVector(ShaderIDs._LightColor, light.color);
-                pointLightMaterial.SetVector(ShaderIDs._LightPos, new Vector4(light.position.x, light.position.y, light.position.z, light.range));
-                pointLightMaterial.SetFloat(ShaderIDs._LightIntensity, light.intensity);
-                pointLightMaterial.SetPass(0);
-                Graphics.DrawProceduralIndirect(MeshTopology.Triangles, sphereIndirectBuffer);
+                block.SetVector(ShaderIDs._LightColor, light.color);
+                block.SetVector(ShaderIDs._LightPos, new Vector4(light.position.x, light.position.y, light.position.z, light.range));
+                block.SetFloat(ShaderIDs._LightIntensity, light.intensity);
+                buffer.DrawProceduralIndirect(Matrix4x4.identity, pointLightMaterial, 0, MeshTopology.Triangles, sphereIndirectBuffer, 0, block);
             }
             //TODO
             if (shadowCount > 0)
@@ -86,19 +88,19 @@ namespace MPipeline
                 }
                 CubeFunction.UpdateLength(ref cubeBuffer, shadowCount);
                 var cullShader = data.resources.pointLightFrustumCulling;
-                CubeFunction.SetBuffer(ref cubeBuffer, ref data.baseBuffer, cullShader);
-                CubeFunction.PrepareDispatch(ref cubeBuffer, cullShader, positions);
+                CubeFunction.SetBuffer(ref cubeBuffer, ref data.baseBuffer, cullShader, buffer);
+                CubeFunction.PrepareDispatch(ref cubeBuffer, buffer, cullShader, positions);
                 for (int i = 0; i < shadowCount; i++)
                 {
                     MPointLight light = MPointLight.allPointLights[cullJob.indices[i]];
-                    CubeFunction.DrawShadow(light, ref cubeBuffer, ref data.baseBuffer, cullShader, i, cubeDepthMaterial);
-                    Graphics.SetRenderTarget(cam.targets.colorBuffer, cam.targets.depthBuffer);
-                    pointLightMaterial.SetVector(ShaderIDs._LightColor, light.color);
-                    pointLightMaterial.SetVector(ShaderIDs._LightPos, positions[i]);
-                    pointLightMaterial.SetFloat(ShaderIDs._LightIntensity, light.intensity);
-                    pointLightMaterial.SetTexture(ShaderIDs._CubeShadowMap, light.shadowmapTexture);
-                    pointLightMaterial.SetPass(1);
-                    Graphics.DrawProceduralIndirect(MeshTopology.Triangles, sphereIndirectBuffer);
+                    CubeFunction.DrawShadow(light, buffer, block, ref cubeBuffer, ref data.baseBuffer, cullShader, i, cubeDepthMaterial);
+                    buffer.SetRenderTarget(cam.targets.renderTargetIdentifier, cam.targets.depthIdentifier);
+                    block.Clear();
+                    block.SetVector(ShaderIDs._LightColor, light.color);
+                    block.SetVector(ShaderIDs._LightPos, positions[i]);
+                    block.SetFloat(ShaderIDs._LightIntensity, light.intensity);
+                    block.SetTexture(ShaderIDs._CubeShadowMap, light.shadowmapTexture);
+                    buffer.DrawProceduralIndirect(Matrix4x4.identity, pointLightMaterial, 1, MeshTopology.Triangles, sphereIndirectBuffer, 0, block);
                 }
                 positions.Dispose();
             }

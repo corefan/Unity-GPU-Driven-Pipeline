@@ -8,7 +8,8 @@ struct Point{
     float3 vertex;
     float4 tangent;
     float3 normal;
-    float3 texcoord;
+    float2 texcoord;
+	uint objIndex;
 };
 #ifndef COMPUTESHADER		//Below is Not for compute shader
 StructuredBuffer<Point> verticesBuffer;
